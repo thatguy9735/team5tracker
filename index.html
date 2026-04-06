@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Team 5 — HMBA Tracker</title>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js" crossorigin="anonymous"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js" crossorigin="anonymous"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── DARK (default) ── */
+:root,[data-theme=dark]{
+  --bg:#0c0e18;--s1:#12151f;--s2:#1a1d2b;--s3:#22263a;
+  --b1:#252838;--b2:#2f3347;--b3:#3d4260;
+  --accent:#6366f1;--acc2:#4f52d9;--accs:rgba(99,102,241,.14);
+  --green:#22c55e;--gs:rgba(34,197,94,.13);
+  --amber:#f59e0b;--as2:rgba(245,158,11,.13);
+  --red:#ef4444;--rs:rgba(239,68,68,.13);
+  --sky:#38bdf8;--ss:rgba(56,189,248,.13);
+  --t1:#eaecf8;--t2:#9499b8;--t3:#575c7a;
+  --q:#818cf8;--qs:rgba(129,140,248,.13);
+  --o:#fb923c;--os:rgba(251,146,60,.13);
+  --r:10px;--rsm:6px;--rlg:14px;
+  --shadow:none;
+}
+/* ── LIGHT ── */
+[data-theme=light]{
+  --bg:#f5f6fb;--s1:#ffffff;--s2:#f0f1f8;--s3:#e8eaf2;
+  --b1:#dde0ef;--b2:#c8ccdf;--b3:#b0b6cf;
+  --accent:#4f46e5;--acc2:#3730a3;--accs:rgba(79,70,229,.1);
+  --green:#16a34a;--gs:rgba(22,163,74,.1);
+  --amber:#d97706;--as2:rgba(217,119,6,.1);
+  --red:#dc2626;--rs:rgba(220,38,38,.1);
+  --sky:#0284c7;--ss:rgba(2,132,199,.1);
+  --t1:#1e1f2e;--t2:#4b5280;--t3:#9499b8;
+  --q:#4f46e5;--qs:rgba(79,70,229,.1);
+  --o:#c2410c;--os:rgba(194,65,12,.1);
+  --shadow:0 1px 3px rgba(0,0,0,.08);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--t1);font-family:'Outfit',sans-serif;font-size:15px;line-height:1.5;transition:background .2s,color .2s;}
+::-webkit-scrollbar{width:3px;height:3px;}::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+.app{max-width:820px;margin:0 auto;padding:0 16px 80px;}
+
+/* Header */
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 0 12px;border-bottom:1px solid var(--b1);gap:8px;flex-wrap:wrap;}
+.logo{font-size:17px;font-weight:700;letter-spacing:-.3px;display:flex;align-items:center;gap:8px;}
+.logo-dot{width:8px;height:8px;background:var(--accent);border-radius:50%;}
+.hright{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.you-btn{display:flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--b2);border-radius:20px;padding:5px 12px 5px 7px;cursor:pointer;font-size:13px;color:var(--t2);transition:.15s;font-family:'Outfit',sans-serif;}
+.you-btn:hover{border-color:var(--accent);color:var(--t1);}
+.icon-btn{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rsm);padding:6px 10px;font-size:13px;cursor:pointer;color:var(--t2);font-family:'Outfit',sans-serif;transition:.15s;line-height:1;}
+.icon-btn:hover{color:var(--t1);border-color:var(--b2);}
+
+/* Top info bar */
+.infobar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 0;flex-wrap:wrap;}
+.presence-row{display:flex;align-items:center;gap:6px;}
+.plbl{font-size:11px;color:var(--t3);}
+.pavs{display:flex;gap:3px;}
+.sync-s{font-size:11px;}
+.sync-s.ok{color:var(--green);}
+.sync-s.err{color:var(--red);}
+.sync-s.conn{color:var(--t3);}
+.meet-chip{font-size:11px;background:var(--accs);color:var(--accent);border-radius:20px;padding:3px 10px;}
+
+/* Announcement banner */
+.announce-bar{margin-top:10px;background:var(--accs);border:1px solid var(--accent);border-radius:var(--r);padding:10px 14px;display:flex;align-items:flex-start;gap:10px;}
+.announce-text{font-size:13px;flex:1;}
+.announce-meta{font-size:10px;color:var(--t3);margin-top:2px;}
+.announce-edit-btn{font-size:11px;color:var(--accent);background:transparent;border:none;cursor:pointer;font-family:'Outfit',sans-serif;white-space:nowrap;margin-top:2px;}
+
+/* Due today banner */
+.due-today-bar{margin-top:10px;background:var(--rs);border:1px solid var(--red);border-radius:var(--r);padding:10px 14px;}
+.dtb-title{font-size:13px;font-weight:600;color:var(--red);margin-bottom:4px;}
+.dtb-item{font-size:12px;color:var(--t2);}
+
+/* Search */
+.search-wrap{position:relative;margin-top:10px;}
+.search-input{width:100%;background:var(--s2);border:1px solid var(--b1);border-radius:var(--r);padding:9px 36px 9px 36px;font-size:13px;color:var(--t1);font-family:'Outfit',sans-serif;outline:none;transition:.15s;}
+.search-input:focus{border-color:var(--accent);}
+.search-input::placeholder{color:var(--t3);}
+.sicon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
+.sclear{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:transparent;border:none;cursor:pointer;color:var(--t3);font-size:20px;line-height:1;display:none;}
+
+/* Tabs */
+.tabs{display:flex;border-bottom:1px solid var(--b1);margin-top:10px;overflow-x:auto;}
+.tab{padding:8px 13px;font-size:13px;font-weight:500;color:var(--t3);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s;font-family:'Outfit',sans-serif;white-space:nowrap;}
+.tab:hover{color:var(--t2);}
+.tab.on{color:var(--t1);border-bottom-color:var(--accent);}
+.tab-badge{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;background:var(--red);color:#fff;border-radius:50%;font-size:9px;font-weight:700;margin-left:4px;vertical-align:middle;}
+
+/* Week nav */
+.wnav-row{display:flex;align-items:center;gap:8px;padding:14px 0 0;}
+.nb{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rsm);padding:5px 14px;font-size:13px;cursor:pointer;color:var(--t2);font-family:'Outfit',sans-serif;transition:.15s;}
+.nb:hover:not(:disabled){background:var(--s3);color:var(--t1);}
+.nb:disabled{opacity:.3;cursor:default;}
+.wtitle{flex:1;text-align:center;font-size:15px;font-weight:600;}
+.wrange{font-size:12px;color:var(--t3);font-weight:400;margin-left:5px;}
+
+/* Stats */
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.scard{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:12px 14px;box-shadow:var(--shadow);}
+.slbl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;}
+.sval{font-size:22px;font-weight:700;letter-spacing:-.5px;}
+
+/* Progress */
+.prow{margin-top:10px;}
+.pmeta{display:flex;justify-content:space-between;font-size:11px;color:var(--t3);margin-bottom:4px;}
+.prog{height:3px;background:var(--s3);border-radius:2px;overflow:hidden;}
+.pf{height:100%;background:var(--accent);border-radius:2px;transition:width .5s cubic-bezier(.4,0,.2,1);}
+.pf.full{background:var(--green);}
+
+/* Sections */
+.sec{margin-top:16px;}
+.sechd{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);box-shadow:var(--shadow);}
+
+/* Leader card */
+.lcard{padding:14px;display:flex;align-items:center;gap:12px;}
+.lname{font-size:15px;font-weight:600;}
+.lsub{font-size:12px;color:var(--t2);margin-top:2px;}
+
+/* Leader notes */
+.leader-notes-box{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rsm);padding:10px 14px;margin-top:8px;}
+.ln-content{font-size:13px;color:var(--t1);line-height:1.6;white-space:pre-wrap;}
+.ln-meta{font-size:10px;color:var(--t3);margin-top:4px;}
+.ln-edit-btn{font-size:11px;color:var(--accent);background:transparent;border:none;cursor:pointer;font-family:'Outfit',sans-serif;}
+
+/* Avatar */
+.av{border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;}
+
+/* Badge */
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;display:inline-block;}
+.bl{background:var(--accs);color:var(--accent);}
+.bq{background:var(--qs);color:var(--q);}
+.bo{background:var(--os);color:var(--o);}
+.bd{background:var(--gs);color:var(--green);}
+.bm{background:var(--ss);color:var(--sky);}
+.bp{background:var(--as2);color:var(--amber);}
+
+/* Urgency */
+.urg-overdue{color:var(--red);font-size:11px;font-weight:600;}
+.urg-today{color:var(--o);font-size:11px;font-weight:700;}
+.urg-soon{color:var(--amber);font-size:11px;}
+.urg-ok{color:var(--t3);font-size:11px;}
+
+/* Status */
+.spill{font-size:10px;padding:2px 8px;border-radius:20px;border:1px solid var(--b2);cursor:pointer;font-family:'Outfit',sans-serif;transition:.15s;white-space:nowrap;}
+.sp-todo{background:transparent;color:var(--t3);}
+.sp-working{background:var(--ss);color:var(--sky);border-color:rgba(56,189,248,.3);}
+.sp-review{background:var(--as2);color:var(--amber);border-color:rgba(245,158,11,.3);}
+
+/* Meetings */
+.mlist{overflow:hidden;}
+.mrow{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--b1);}
+.mrow:last-child{border-bottom:none;}
+.micon{width:28px;height:28px;border-radius:var(--rsm);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.mi-s{background:var(--ss);}
+.mi-p{background:var(--as2);}
+.minfo{flex:1;}
+.mname{font-size:13px;font-weight:500;}
+.mtime{font-size:12px;color:var(--t3);margin-top:1px;}
+.meet-soon-pill{font-size:10px;background:var(--gs);color:var(--green);padding:2px 7px;border-radius:10px;font-weight:600;}
+
+/* Assignment rows */
+.alist{overflow:hidden;}
+.arow{padding:11px 14px;border-bottom:1px solid var(--b1);transition:background .1s;}
+.arow:last-child{border-bottom:none;}
+.arow:hover{background:var(--s2);}
+.arow.done-row .aname{color:var(--t3);text-decoration:line-through;}
+.arow.blocked-row{border-left:2px solid var(--red);background:rgba(239,68,68,.04);}
+.atop{display:flex;align-items:flex-start;gap:9px;}
+input[type=checkbox]{width:15px;height:15px;flex-shrink:0;margin-top:2px;cursor:pointer;accent-color:var(--accent);}
+.aname{font-size:13px;font-weight:500;flex:1;line-height:1.4;}
+.ameta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;margin-top:4px;margin-left:24px;}
+.doneby{font-size:11px;color:var(--green);}
+.otag{font-size:11px;color:var(--sky);background:var(--ss);padding:1px 6px;border-radius:10px;}
+.new-pill{font-size:9px;background:var(--accent);color:#fff;padding:1px 6px;border-radius:10px;font-weight:700;animation:blink 2s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* Owner picker */
+.owner-drop{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;margin-left:24px;}
+.op{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--b2);background:transparent;cursor:pointer;color:var(--t2);font-family:'Outfit',sans-serif;transition:.15s;}
+.op:hover{background:var(--s3);color:var(--t1);}
+
+/* Comment thread */
+.comment-thread{margin-top:8px;margin-left:24px;}
+.comment-item{background:var(--s2);border:1px solid var(--b1);border-radius:var(--rsm);padding:7px 10px;margin-bottom:5px;}
+.comment-item:last-child{margin-bottom:0;}
+.comment-text{font-size:12px;color:var(--t1);line-height:1.5;}
+.comment-meta{font-size:10px;color:var(--t3);margin-top:3px;display:flex;align-items:center;gap:6px;}
+.comment-del{background:transparent;border:none;cursor:pointer;color:var(--t3);font-size:11px;font-family:'Outfit',sans-serif;}
+.comment-del:hover{color:var(--red);}
+.comment-input-wrap{margin-top:6px;display:flex;gap:6px;}
+.comment-input{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rsm);padding:6px 10px;font-size:12px;color:var(--t1);font-family:'Outfit',sans-serif;outline:none;transition:.15s;}
+.comment-input:focus{border-color:var(--accent);}
+.comment-submit{background:var(--accent);border:none;border-radius:var(--rsm);padding:6px 12px;font-size:12px;color:#fff;cursor:pointer;font-family:'Outfit',sans-serif;transition:.15s;white-space:nowrap;}
+.comment-submit:hover{background:var(--acc2);}
+.link-chip{font-size:11px;color:var(--sky);background:var(--ss);padding:1px 7px;border-radius:10px;text-decoration:none;display:inline-flex;align-items:center;gap:3px;}
+.link-chip:hover{opacity:.8;}
+.link-edit-wrap{margin-top:6px;margin-left:24px;display:flex;gap:6px;}
+.link-input{flex:1;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rsm);padding:5px 9px;font-size:12px;color:var(--t1);font-family:'Outfit',sans-serif;outline:none;}
+.link-input:focus{border-color:var(--accent);}
+.dby-av{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;font-size:7px;font-weight:700;margin-right:2px;vertical-align:middle;}
+.nbtn{font-size:11px;background:transparent;border:1px solid var(--b1);border-radius:20px;padding:2px 8px;cursor:pointer;color:var(--t3);font-family:'Outfit',sans-serif;transition:.15s;}
+.nbtn:hover{border-color:var(--b2);color:var(--t2);}
+.blocked-pill{font-size:10px;padding:2px 8px;border-radius:20px;background:var(--rs);color:var(--red);border:1px solid rgba(239,68,68,.3);font-weight:600;cursor:pointer;}
+.blocked-pill:hover{opacity:.8;}
+.pts-tag{font-size:10px;color:var(--t3);padding:2px 6px;background:var(--s2);border-radius:10px;font-family:'DM Mono',monospace;}
+.grade-chip{font-size:10px;background:var(--gs);color:var(--green);padding:2px 8px;border-radius:10px;font-family:'DM Mono',monospace;font-weight:600;cursor:pointer;}
+.grade-chip:hover{opacity:.8;}
+.grade-input-wrap{margin-top:6px;margin-left:24px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.grade-num{width:56px;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rsm);padding:4px 8px;font-size:12px;color:var(--t1);font-family:'DM Mono',monospace;text-align:center;outline:none;}
+.grade-num:focus{border-color:var(--accent);}
+.stars{display:inline-flex;gap:1px;cursor:pointer;}
+.star{font-size:13px;opacity:.25;transition:.1s;line-height:1;}
+.star.on{opacity:1;}
+.stars:hover .star{opacity:.5;}
+.stars .star:hover,.stars .star:hover~.star{opacity:1;}
+.privnote-box{margin-top:6px;margin-left:24px;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:var(--rsm);padding:7px 10px;}
+.privnote-label{font-size:9px;color:var(--amber);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px;}
+.privnote-text{font-size:12px;color:var(--t2);line-height:1.5;white-space:pre-wrap;}
+.privnote-edit{margin-top:6px;margin-left:24px;}
+.privnote-ta{width:100%;background:rgba(245,158,11,.05);border:1px solid rgba(245,158,11,.25);border-radius:var(--rsm);padding:6px 10px;font-size:12px;color:var(--t1);font-family:'Outfit',sans-serif;resize:vertical;min-height:50px;outline:none;}
+.privnote-ta:focus{border-color:var(--amber);}
+
+/* Upcoming */
+.upcoming-group{margin-top:14px;}
+.ug-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 0;margin-bottom:6px;border-bottom:1px solid var(--b1);}
+.ug-overdue .ug-label{color:var(--red);}
+.ug-today .ug-label{color:var(--o);}
+.ug-week .ug-label{color:var(--amber);}
+.ug-later .ug-label{color:var(--t3);}
+.up-row{display:flex;gap:10px;align-items:center;padding:10px 12px;background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);margin-bottom:5px;cursor:pointer;transition:background .1s;box-shadow:var(--shadow);}
+.up-row:hover{background:var(--s2);}
+.up-row.done-row{opacity:.5;}
+.up-content{flex:1;}
+.up-name{font-size:13px;font-weight:500;margin-bottom:2px;}
+.up-meta{display:flex;gap:5px;flex-wrap:wrap;align-items:center;}
+
+/* My Tasks */
+.my-tasks-filter{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;margin-bottom:2px;}
+.mf-btn{font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--b1);background:transparent;cursor:pointer;color:var(--t2);font-family:'Outfit',sans-serif;transition:.15s;}
+.mf-btn.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.mf-btn:hover:not(.on){background:var(--s2);color:var(--t1);}
+
+/* Schedule */
+.sched-card{overflow:hidden;margin-top:12px;}
+.srow{display:flex;gap:10px;padding:10px 14px;border-bottom:1px solid var(--b1);align-items:flex-start;cursor:pointer;transition:background .1s;}
+.srow:last-child{border-bottom:none;}
+.srow:hover{background:var(--s2);}
+.srow.cur{background:var(--accs);border-left:3px solid var(--accent);}
+.wn{font-size:11px;font-weight:600;color:var(--t3);min-width:26px;padding-top:2px;font-family:'DM Mono',monospace;}
+.srow.cur .wn{color:var(--accent);}
+.sbody{flex:1;}
+.sldr{font-size:13px;font-weight:600;margin-bottom:2px;}
+.srng{font-size:12px;color:var(--t3);margin-bottom:4px;}
+.schips{display:flex;gap:5px;flex-wrap:wrap;}
+.chip{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;}
+.cm{background:var(--ss);color:var(--sky);}
+.cpx{background:var(--as2);color:var(--amber);}
+.prog-sm{height:2px;background:var(--s3);border-radius:1px;margin-top:5px;overflow:hidden;}
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:0;}
+.tg-cell{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:10px 12px;display:flex;align-items:center;gap:9px;}
+.tg-cell.active{border-color:var(--accent);background:var(--accs);}
+.tg-cell.blocked-cell{border-color:var(--red);background:rgba(239,68,68,.05);}
+.tg-name{font-size:12px;font-weight:500;flex:1;}
+.tg-stat{font-size:11px;color:var(--t3);margin-top:1px;}
+.pf-sm{height:100%;background:var(--accent);border-radius:1px;}
+.pf-sm.full{background:var(--green);}
+
+/* Activity */
+.actlog{overflow:hidden;margin-top:12px;}
+.actrow{display:flex;gap:8px;padding:9px 14px;border-bottom:1px solid var(--b1);align-items:flex-start;}
+.actrow:last-child{border-bottom:none;}
+.act-txt{font-size:12px;color:var(--t2);flex:1;line-height:1.4;}
+.act-time{font-size:10px;color:var(--t3);white-space:nowrap;margin-top:2px;font-family:'DM Mono',monospace;}
+.adot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+
+/* Settings */
+.sg{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);}
+.sg-t{font-size:13px;font-weight:600;margin-bottom:10px;}
+.sg-r{display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.sg-r:last-child{margin-bottom:0;}
+.sg-l{font-size:13px;color:var(--t2);flex:1;}
+.tpick{background:var(--s2);border:1px solid var(--b2);border-radius:var(--rsm);padding:6px 10px;color:var(--t1);font-family:'Outfit',sans-serif;font-size:13px;outline:none;transition:.15s;}
+.tpick:focus{border-color:var(--accent);}
+select.tpick{cursor:pointer;}
+.gcalnote{font-size:12px;color:var(--t3);margin-top:8px;padding:8px 12px;background:var(--s2);border-radius:var(--rsm);border:1px solid var(--b1);}
+
+/* Projects total */
+.ptotal{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;padding:14px 16px;margin-top:12px;}
+.pti{text-align:center;}
+.ptv{font-size:26px;font-weight:700;letter-spacing:-.5px;}
+.ptl{font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px;}
+
+/* Modals */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:16px;}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:var(--rlg);padding:22px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto;}
+.modal-t{font-size:16px;font-weight:700;margin-bottom:4px;}
+.modal-s{font-size:13px;color:var(--t2);margin-bottom:14px;line-height:1.6;}
+.macts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.btn{padding:8px 16px;border-radius:var(--rsm);font-size:13px;font-weight:500;cursor:pointer;border:none;font-family:'Outfit',sans-serif;transition:.15s;}
+.bacc{background:var(--accent);color:#fff;}
+.bacc:hover{background:var(--acc2);}
+.bghost{background:var(--s2);color:var(--t2);border:1px solid var(--b2);}
+.bghost:hover{color:var(--t1);}
+textarea.modal-ta{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:var(--rsm);padding:8px 12px;font-size:13px;color:var(--t1);font-family:'Outfit',sans-serif;resize:vertical;min-height:80px;outline:none;transition:.15s;}
+textarea.modal-ta:focus{border-color:var(--accent);}
+
+/* Picker */
+.picker-ov{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px;}
+.picker-box{background:var(--s1);border:1px solid var(--b2);border-radius:var(--rlg);padding:24px;max-width:400px;width:100%;}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:14px;}
+.pbtn{display:flex;align-items:center;gap:9px;padding:10px;border:1px solid var(--b1);border-radius:var(--r);background:transparent;cursor:pointer;transition:.15s;font-family:'Outfit',sans-serif;width:100%;}
+.pbtn:hover{background:var(--s2);border-color:var(--b2);}
+.pname{font-size:13px;font-weight:500;color:var(--t1);}
+
+/* Keyboard shortcuts */
+.kbd{display:inline-block;background:var(--s2);border:1px solid var(--b2);border-radius:4px;padding:1px 6px;font-family:'DM Mono',monospace;font-size:11px;color:var(--t2);}
+
+/* Confetti */
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:999;}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--s1);border:1px solid var(--b2);border-radius:var(--r);padding:11px 16px;font-size:13px;color:var(--t1);z-index:300;transform:translateY(80px);opacity:0;transition:.3s cubic-bezier(.4,0,.2,1);max-width:300px;box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.toast.show{transform:translateY(0);opacity:1;}
+.tok{border-left:3px solid var(--green);}
+.terr{border-left:3px solid var(--red);}
+.tinfo{border-left:3px solid var(--accent);}
+.twarn{border-left:3px solid var(--amber);}
+
+.empty{text-align:center;padding:2.5rem;font-size:13px;color:var(--t3);}
+/* Guide */
+.guide-wrap{padding-top:16px;}
+.guide-section{background:var(--s1);border:1px solid var(--b1);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;box-shadow:var(--shadow);}
+.guide-section-title{font-size:13px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:7px;}
+.guide-section-icon{width:26px;height:26px;border-radius:var(--rsm);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;background:var(--accs);}
+.guide-row{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--b1);font-size:13px;}
+.guide-row:last-child{border-bottom:none;}
+.guide-icon{font-size:15px;flex-shrink:0;width:24px;text-align:center;margin-top:1px;}
+.guide-content{flex:1;}
+.guide-label{font-weight:500;color:var(--t1);margin-bottom:1px;}
+.guide-desc{font-size:12px;color:var(--t2);line-height:1.5;}
+.guide-kbd-row{display:flex;flex-wrap:wrap;gap:8px;padding-top:4px;}
+.guide-kbd{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--t2);}
+.guide-hero{background:var(--accs);border:1px solid var(--accent);border-radius:var(--r);padding:16px 18px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+.guide-hero-text{flex:1;}
+.guide-hero-title{font-size:15px;font-weight:700;color:var(--t1);margin-bottom:3px;}
+.guide-hero-sub{font-size:12px;color:var(--t2);line-height:1.5;}
+.guide-url{font-size:13px;font-family:'DM Mono',monospace;color:var(--accent);background:var(--s2);padding:6px 12px;border-radius:var(--rsm);display:inline-block;margin-top:8px;}
+@media(max-width:520px){
+  .sgrid{grid-template-columns:1fr 1fr;}
+  .pgrid{grid-template-columns:1fr;}
+  .infobar{flex-direction:column;align-items:flex-start;}
+}
+</style>
+</head>
+<body>
+<canvas id="confetti" style="display:none;"></canvas>
+
+<!-- Name picker -->
+<div class="picker-ov" id="picker-ov" style="display:none;">
+  <div class="picker-box">
+    <div style="font-size:17px;font-weight:700;margin-bottom:4px;">Who are you?</div>
+    <div style="font-size:13px;color:var(--t2);">Pick your name — your activity gets tagged so everyone knows who did what.</div>
+    <div class="pgrid" id="pgrid"></div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div class="overlay" id="set-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-t">Settings</div>
+    <div class="sg"><div class="sg-t">Wednesday sync</div>
+      <div class="sg-r"><span class="sg-l">Time</span><input type="time" id="set-wed" class="tpick" value="17:30"/></div>
+      <div class="sg-r"><span class="sg-l">Duration</span><select id="set-wed-d" class="tpick"><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hour</option></select></div>
+    </div>
+    <div class="sg"><div class="sg-t">Saturday session</div>
+      <div class="sg-r"><span class="sg-l">Time</span><input type="time" id="set-sat" class="tpick" value="10:00"/></div>
+      <div class="sg-r"><span class="sg-l">Duration</span><select id="set-sat-d" class="tpick"><option value="60">1 hour</option><option value="90">1.5 hours</option><option value="120">2 hours</option></select></div>
+    </div>
+    <div class="sg"><div class="sg-t">Littlefield prep (Sun May 24)</div>
+      <div class="sg-r"><span class="sg-l">Time</span><input type="time" id="set-prep" class="tpick" value="18:00"/></div>
+    </div>
+    <div class="sg"><div class="sg-t">Meeting video link</div>
+      <div class="sg-r"><span class="sg-l">URL</span><input type="url" id="set-meet-link" class="tpick" placeholder="https://teams.microsoft.com/l/meetup-join/…" style="font-size:12px;"/></div>
+      <div style="font-size:11px;color:var(--t3);margin-top:4px;">Shows a "Join" button on all meeting cards. Paste your Microsoft Teams link.</div>
+    </div>
+    <div class="gcalnote">⚠ Update your Google Calendar events separately to match.</div>
+    <div class="sg" style="margin-top:10px;border-color:var(--rs);"><div class="sg-t" style="color:var(--red);">⚠ Danger zone</div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:10px;">Resets all checkboxes, comments, statuses, and notes for the whole team. Use at end of quarter only.</div>
+      <button onclick="resetQuarter()" style="font-size:12px;padding:6px 14px;border-radius:var(--rsm);border:1px solid var(--red);background:transparent;color:var(--red);cursor:pointer;font-family:'Outfit',sans-serif;">Reset all quarter data</button>
+    </div>
+    <div class="sg" style="margin-top:10px;"><div class="sg-t">Keyboard shortcuts</div>
+      <div style="font-size:12px;color:var(--t2);line-height:2;">
+        <kbd class="kbd">←</kbd> <kbd class="kbd">→</kbd> Navigate weeks &nbsp;|&nbsp;
+        <kbd class="kbd">U</kbd> Upcoming &nbsp;|&nbsp;
+        <kbd class="kbd">W</kbd> This week &nbsp;|&nbsp;
+        <kbd class="kbd">P</kbd> Projects &nbsp;|&nbsp;
+        <kbd class="kbd">M</kbd> My tasks &nbsp;|&nbsp;
+        <kbd class="kbd">/</kbd> Search &nbsp;|&nbsp;
+        <kbd class="kbd">D</kbd> Dark/light
+      </div>
+    </div>
+    <div class="macts">
+      <button class="btn bacc" onclick="saveSettings()">Save &amp; sync to team</button>
+      <button class="btn bghost" onclick="closeModal('set-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Announcement edit modal -->
+<div class="overlay" id="ann-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-t">Team announcement</div>
+    <div class="modal-s">Pinned at the top for everyone. Use it for reminders, schedule changes, or anything the team needs to see.</div>
+    <textarea class="modal-ta" id="ann-input" placeholder="Type an announcement…"></textarea>
+    <div class="macts">
+      <button class="btn bacc" onclick="saveAnnouncement()">Pin announcement</button>
+      <button class="btn bghost" style="color:var(--red);" onclick="clearAnnouncement()">Clear</button>
+      <button class="btn bghost" onclick="closeModal('ann-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Leader notes modal -->
+<div class="overlay" id="ln-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-t" id="ln-modal-title">Leader notes</div>
+    <div class="modal-s">Write a note for the team — agenda, focus areas, reminders. Visible to everyone on This Week.</div>
+    <textarea class="modal-ta" id="ln-input" placeholder="This week we should focus on…" style="min-height:120px;"></textarea>
+    <div class="macts">
+      <button class="btn bacc" onclick="saveLeaderNotes()">Save notes</button>
+      <button class="btn bghost" onclick="closeModal('ln-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="app">
+  <header>
+    <div class="logo"><div class="logo-dot"></div>Team 5</div>
+    <div class="hright">
+      <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">🌙</button>
+      <button class="icon-btn" onclick="openSettings()">⚙</button>
+      <button class="you-btn" id="youpill" onclick="openPicker()">
+        <div class="av" id="youdot" style="width:18px;height:18px;background:#333;font-size:8px;"></div>
+        <span id="youname">Pick name</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="infobar">
+    <div class="presence-row">
+      <span class="plbl">Online:</span>
+      <div class="pavs" id="pavs"></div>
+      <span class="sync-s conn" id="sync-s">Connecting…</span>
+    </div>
+    <div id="meet-chip-wrap"></div>
+  </div>
+
+  <div id="due-today-banner"></div>
+  <div id="announce-banner"></div>
+
+  <div class="search-wrap">
+    <span class="sicon">🔍</span>
+    <input class="search-input" id="search-input" placeholder="Search all assignments… (or press /)" oninput="onSearch(this.value)"/>
+    <button class="sclear" id="sclear" onclick="clearSearch()">×</button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="sw('upcoming')">Upcoming</button>
+    <button class="tab" onclick="sw('week')">This Week</button>
+    <button class="tab" onclick="sw('mine')">My Tasks</button>
+    <button class="tab" onclick="sw('schedule')">Schedule</button>
+    <button class="tab" onclick="sw('projects')">All Projects</button>
+    <button class="tab" onclick="sw('log')">Activity<span class="tab-badge" id="new-badge" style="display:none;"></span></button>
+    <button class="tab" onclick="sw('guide')">Guide</button>
+  </div>
+
+  <div id="tab-upcoming"></div>
+  <div id="tab-week" style="display:none;"></div>
+  <div id="tab-mine" style="display:none;"></div>
+  <div id="tab-schedule" style="display:none;"></div>
+  <div id="tab-projects" style="display:none;"></div>
+  <div id="tab-log" style="display:none;"></div>
+  <div id="tab-search" style="display:none;"></div>
+  <div id="tab-guide" style="display:none;"></div>
+</div>
+
+<script>
+/* ═══ FIREBASE CONFIG ═══ */
+const FB={
+  apiKey:"AIzaSyAktbnQKHJb9fknELJjPA_wL_a5Byjn1Rs",
+  authDomain:"team-5-tracker.firebaseapp.com",
+  projectId:"team-5-tracker",
+  storageBucket:"team-5-tracker.firebasestorage.app",
+  messagingSenderId:"773786431955",
+  appId:"1:773786431955:web:00ad39822845f1b4627f26",
+  databaseURL:"https://team-5-tracker-default-rtdb.firebaseio.com"
+};
+
+/* ═══ STATIC DATA ═══ */
+const TODAY=new Date();
+TODAY.setHours(0,0,0,0);
+
+const MEM=[
+  {name:'Audrey Lu',init:'AL',bg:'#4338ca',cl:'#a5b4fc'},
+  {name:'Amaduesz', init:'AM',bg:'#0f766e',cl:'#5eead4'},
+  {name:'Taiwo',    init:'TW',bg:'#b45309',cl:'#fcd34d'},
+  {name:'Samantha', init:'SA',bg:'#be185d',cl:'#f9a8d4'},
+  {name:'Andrew',   init:'AN',bg:'#0369a1',cl:'#7dd3fc'},
+  {name:'Tyler',    init:'TY',bg:'#5b21b6',cl:'#c4b5fd'},
+];
+
+const WK=[
+  {n:1, r:'Apr 1–5',    wd:'Apr 8', sat:'Apr 11',prep:false},
+  {n:2, r:'Apr 6–12',   wd:'Apr 15',sat:'Apr 18',prep:false},
+  {n:3, r:'Apr 13–19',  wd:'Apr 22',sat:'Apr 25',prep:false},
+  {n:4, r:'Apr 20–26',  wd:'Apr 29',sat:'May 2', prep:false},
+  {n:5, r:'Apr 27–May 3',wd:'May 6', sat:'May 9', prep:false},
+  {n:6, r:'May 4–10',   wd:'May 13',sat:'May 16',prep:false},
+  {n:7, r:'May 11–17',  wd:'May 20',sat:'May 23',prep:false},
+  {n:8, r:'May 18–24',  wd:'May 27',sat:'May 30',prep:true},
+  {n:9, r:'May 25–31',  wd:'Jun 3', sat:'Jun 6', prep:false},
+  {n:10,r:'Jun 1–13',   wd:'Jun 10',sat:'Jun 13',prep:false},
+];
+
+const AS={
+  1:[{n:'QMETH 505 — Problem Set 1',c:'q',due:new Date('2026-04-05'),pts:6}],
+  2:[{n:'QMETH 505 — Problem Set 2',c:'q',due:new Date('2026-04-12'),pts:10},{n:'OPMGT 520 — Shouldice Hospital',c:'o',due:new Date('2026-04-12'),pts:100}],
+  3:[{n:'QMETH 505 — Problem Set 3',c:'q',due:new Date('2026-04-19'),pts:12},{n:'OPMGT 520 — City Hospital ER',c:'o',due:new Date('2026-04-19'),pts:100}],
+  4:[{n:'QMETH 505 — Problem Set 4',c:'q',due:new Date('2026-04-26'),pts:12},{n:'OPMGT 520 — Sport Obermeyer Case 1',c:'o',due:new Date('2026-04-26'),pts:100}],
+  5:[{n:'OPMGT 520 — Simulation 5.1: eBeer Game',c:'o',due:new Date('2026-05-03'),pts:100},{n:'OPMGT 520 — Airflow Aircraft',c:'o',due:new Date('2026-05-03'),pts:100}],
+  6:[{n:'OPMGT 520 — Beautiful Bags Case',c:'o',due:new Date('2026-05-10'),pts:100},{n:'OPMGT 520 — Discussion 6.1: Bullwhip',c:'o',due:new Date('2026-05-10'),pts:30}],
+  7:[{n:'OPMGT 520 — Littlefield Prep Pt. 2',c:'o',due:new Date('2026-05-13'),pts:null},{n:'OPMGT 520 — Discussion 7.1: Strategic Alliances',c:'o',due:new Date('2026-05-13'),pts:30},{n:'OPMGT 520 — Discussion 7.2: Push & Pull',c:'o',due:new Date('2026-05-13'),pts:30}],
+  8:[{n:'OPMGT 520 — Littlefield Gameplay',c:'o',due:new Date('2026-05-24'),pts:100},{n:'OPMGT 520 — Discussion 8.1: Buyback Contract',c:'o',due:new Date('2026-05-24'),pts:30}],
+  9:[{n:'OPMGT 520 — Littlefield Memo',c:'o',due:new Date('2026-05-27'),pts:100},{n:'OPMGT 520 — Sport Obermeyer Case 2',c:'o',due:new Date('2026-05-31'),pts:100},{n:'OPMGT 520 — Discussion 9.1: Global Opt.',c:'o',due:new Date('2026-05-31'),pts:30}],
+  10:[{n:'OPMGT 520 — Final Exam',c:'o',due:new Date('2026-06-13'),pts:null}],
+};
+
+/* ═══ STATE ═══ */
+let me='',myBg='#333',myCl='#fff';
+let fbState={},fbSettings={wedTime:'17:30',wedDur:'30',satTime:'10:00',satDur:'60',prepTime:'18:00'};
+let fbComments={},fbAnnounce={},fbLeaderNotes={},fbLinks={},fbBlocked={},fbGrades={},fbRatings={};
+let privateNotes={},gradeOpen={},privNoteOpen={};
+let presence={};
+let curW=1,tab='upcoming',ownerOpen={},commentOpen={},linkOpen={};
+let searchQ='',mineFilter='mine',showCompleted=false;
+let lastSeen=Date.now(),newCount=0,celebratedWeeks=new Set();
+let weekWasComplete={},fbInitialized=false;
+let db=null;
+
+/* ═══ BOOT ═══ */
+function boot(){
+  try{
+    firebase.initializeApp(FB);
+    db=firebase.database();
+    setupListeners();
+    loadUser();
+    buildPicker();
+    setInterval(updateMeetChip,60000);
+    updateMeetChip();
+    setupKeyboard();
+    setInterval(()=>{if(tab==='upcoming'||tab==='week')renderCur();},60000);
+  }catch(e){console.error(e);}
+}
+
+function loadUser(){
+  try{const d=JSON.parse(localStorage.getItem('t5u')||'{}');me=d.me||'';myBg=d.bg||'#333';myCl=d.cl||'#fff';curW=d.curW||detectWeek();celebratedWeeks=new Set(d.cw||[]);const th=d.theme||'dark';document.documentElement.setAttribute('data-theme',th);document.getElementById('theme-btn').textContent=th==='dark'?'🌙':'☀️';}catch(e){}
+  try{privateNotes=JSON.parse(localStorage.getItem('t5_privnotes')||'{}');}catch(e){}
+  if(!me)openPicker();else{updateYou();renderAll();}
+}
+function saveUser(){try{localStorage.setItem('t5u',JSON.stringify({me,bg:myBg,cl:myCl,curW,cw:[...celebratedWeeks],theme:document.documentElement.getAttribute('data-theme')||'dark'}));}catch(e){}}
+
+/* ═══ FIREBASE LISTENERS ═══ */
+function setupListeners(){
+  db.ref('t5/state').on('value',s=>{
+    const prev=JSON.stringify(fbState);
+    fbState=s.val()||{};
+    setSS('ok');
+    if(!fbInitialized){
+      // First load — snapshot current completion without celebrating
+      Object.keys(AS).forEach(w=>{
+        const comp=AS[w].filter((_,i)=>fbState[kk(+w,i)]?.done).length;
+        weekWasComplete[+w]=comp===AS[w].length;
+      });
+      fbInitialized=true;
+    } else {
+      const n=countNewChanges();
+      if(n>newCount){toast(`${n-newCount} new update${(n-newCount)>1?'s':''} from your team`,'tinfo');}
+      newCount=n;updateBadge();
+      checkCelebration();
+    }
+    renderAll();
+  });
+  db.ref('t5/settings').on('value',s=>{if(s.val())fbSettings={...fbSettings,...s.val()};renderAll();});
+  db.ref('t5/comments').on('value',s=>{
+    const prev=JSON.stringify(fbComments);
+    fbComments=s.val()||{};
+    if(prev!=='{}'){
+      let nc=0;
+      Object.values(fbComments).forEach(thread=>{Object.values(thread).forEach(c=>{if(c.by&&c.by!==me&&(c.ts||0)>lastSeen)nc++;});});
+      if(nc>0){newCount+=nc;lastSeen=Date.now();updateBadge();toast(`${nc} new comment${nc>1?'s':''} from your team`,'tinfo');}
+    }
+    renderAll();
+  });
+  db.ref('t5/announce').on('value',s=>{fbAnnounce=s.val()||{};renderAnnounce();});
+  db.ref('t5/links').on('value',s=>{fbLinks=s.val()||{};renderAll();});
+  db.ref('t5/grades').on('value',s=>{fbGrades=s.val()||{};renderAll();});
+  db.ref('t5/ratings').on('value',s=>{fbRatings=s.val()||{};renderAll();});
+  db.ref('t5/blocked').on('value',s=>{
+    const prev=JSON.stringify(fbBlocked);
+    fbBlocked=s.val()||{};
+    // Alert teammates when someone marks blocked
+    if(prev!=='{}'){
+      Object.entries(fbBlocked).forEach(([k,v])=>{
+        if(v&&v.by&&v.by!==me&&(v.ts||0)>lastSeen){
+          const[w,i]=k.replace('w','').split('_');
+          const label=AS[+w]?.[+i]?.n?.split(' — ')?.[1]||k;
+          toast(`🚨 ${v.by} is blocked on ${label}`,'twarn');
+        }
+      });
+    }
+    renderAll();
+  });
+  db.ref('t5/presence').on('value',s=>{presence=s.val()||{};renderPresence();});
+  db.ref('.info/connected').on('value',s=>{
+    if(s.val()){setSS('ok');setPresence(true);}else setSS('err');
+  });
+}
+
+function countNewChanges(){
+  let n=0;
+  Object.values(fbState).forEach(v=>{
+    if(v.doneBy&&v.doneBy!==me&&(v.doneTs||0)>lastSeen)n++;
+    if(v.statusBy&&v.statusBy!==me&&(v.statusTs||0)>lastSeen)n++;
+  });
+  Object.values(fbComments).forEach(thread=>{
+    Object.values(thread).forEach(c=>{
+      if(c.by&&c.by!==me&&(c.ts||0)>lastSeen)n++;
+    });
+  });
+  return n;
+}
+
+function setSS(t){
+  const el=document.getElementById('sync-s');if(!el)return;
+  el.className='sync-s '+(t==='ok'?'ok':'err');
+  el.textContent=t==='ok'?'● Live':'○ Offline';
+}
+
+function setPresence(on){
+  if(!me||!db)return;
+  const ref=db.ref(`t5/presence/${me.replace(/\s+/g,'_')}`);
+  ref.set({name:me,bg:myBg,cl:myCl,online:on,ts:firebase.database.ServerValue.TIMESTAMP});
+  ref.onDisconnect().update({online:false,ts:firebase.database.ServerValue.TIMESTAMP});
+}
+
+function renderPresence(){
+  const el=document.getElementById('pavs');if(!el)return;
+  const online=Object.values(presence).filter(p=>p.online&&(Date.now()-(p.ts||0))<120000);
+  el.innerHTML=online.length
+    ?online.map(p=>`<div class="av" title="${esc(p.name)}" style="width:22px;height:22px;background:${p.bg};color:${p.cl};font-size:8px;border:1.5px solid var(--bg);">${(p.name||'').slice(0,2)}</div>`).join('')
+    :'<span style="font-size:11px;color:var(--t3);">Just you</span>';
+}
+
+function renderAnnounce(){
+  const el=document.getElementById('announce-banner');if(!el)return;
+  if(!fbAnnounce.text){el.innerHTML=`<div style="margin-top:10px;"><button onclick="openAnnouncement()" style="font-size:12px;color:var(--t3);background:transparent;border:1px dashed var(--b2);border-radius:var(--r);padding:7px 14px;cursor:pointer;font-family:'Outfit',sans-serif;width:100%;transition:.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--b2)';this.style.color='var(--t3)'">📌 Pin a team announcement</button></div>`;return;}
+  el.innerHTML=`<div class="announce-bar">
+    <div style="font-size:18px;flex-shrink:0;">📌</div>
+    <div style="flex:1;">
+      <div class="announce-text">${esc(fbAnnounce.text)}</div>
+      <div class="announce-meta">${esc(fbAnnounce.by||'')}${fbAnnounce.ts?' · '+fmtTs(fbAnnounce.ts):''}</div>
+    </div>
+    <button class="announce-edit-btn" onclick="openAnnouncement()">Edit</button>
+  </div>`;
+}
+
+function renderDueToday(){
+  const el=document.getElementById('due-today-banner');if(!el)return;
+  const due=[];
+  Object.entries(AS).forEach(([w,items])=>{
+    items.forEach((a,i)=>{
+      const d=new Date(a.due);d.setHours(0,0,0,0);
+      if(d.getTime()===TODAY.getTime()&&!fbState[kk(w,i)]?.done)due.push(a.n);
+    });
+  });
+  if(!due.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="due-today-bar">
+    <div class="dtb-title">🔥 Due today (${due.length})</div>
+    ${due.map(n=>`<div class="dtb-item">· ${esc(n)}</div>`).join('')}
+  </div>`;
+}
+
+/* ═══ CELEBRATION ═══ */
+function checkCelebration(){
+  Object.keys(AS).forEach(w=>{
+    const items=AS[w];
+    const comp=items.filter((_,i)=>fbState[kk(+w,i)]?.done).length;
+    const isNowComplete=comp===items.length;
+    const wasComplete=!!weekWasComplete[+w];
+    // Fire confetti only on transition: incomplete → complete
+    if(isNowComplete&&!wasComplete){
+      setTimeout(launchConfetti,300);
+      toast(`🎉 Week ${w} complete — great work team!`,'tok');
+    }
+    weekWasComplete[+w]=isNowComplete;
+  });
+}
+
+function launchConfetti(){
+  const c=document.getElementById('confetti');
+  c.style.display='block';
+  const ctx=c.getContext('2d');
+  c.width=window.innerWidth;c.height=window.innerHeight;
+  const p=Array.from({length:100},()=>({x:Math.random()*c.width,y:-20,r:Math.random()*5+3,color:`hsl(${Math.random()*360},70%,60%)`,dx:(Math.random()-.5)*2,dy:Math.random()*3+2,rot:Math.random()*360}));
+  let f=0;
+  const a=setInterval(()=>{ctx.clearRect(0,0,c.width,c.height);p.forEach(q=>{q.y+=q.dy;q.x+=q.dx;q.rot+=2;ctx.save();ctx.translate(q.x,q.y);ctx.rotate(q.rot*Math.PI/180);ctx.fillStyle=q.color;ctx.fillRect(-q.r,-q.r/2,q.r*2,q.r);ctx.restore();if(q.y>c.height)q.y=-10;});f++;if(f>150){clearInterval(a);ctx.clearRect(0,0,c.width,c.height);c.style.display='none';}},16);
+}
+
+/* ═══ MEETING COUNTDOWN ═══ */
+function updateMeetChip(){
+  const s=fbSettings,now=new Date();
+  const slots=[];
+  for(let i=0;i<10;i++){
+    const d=new Date(now);d.setDate(d.getDate()+i);d.setSeconds(0);d.setMilliseconds(0);
+    const dow=d.getDay();
+    if(dow===3){const[h,m]=(s.wedTime||'17:30').split(':');d.setHours(+h,+m);if(d>now)slots.push({dt:d,label:'Wed sync'});}
+    if(dow===6){const[h,m]=(s.satTime||'10:00').split(':');d.setHours(+h,+m);if(d>now)slots.push({dt:d,label:'Sat session'});}
+  }
+  const prep=new Date('2026-05-24');const[ph,pm]=(s.prepTime||'18:00').split(':');prep.setHours(+ph,+pm);
+  if(prep>now)slots.push({dt:prep,label:'Littlefield prep'});
+  slots.sort((a,b)=>a.dt-b.dt);
+  const nx=slots[0];
+  const el=document.getElementById('meet-chip-wrap');if(!el)return;
+  if(!nx){el.innerHTML='';return;}
+  const diff=nx.dt-now;
+  // Calendar day diff — compare midnight to midnight, not raw ms
+  const todayMid=new Date(now);todayMid.setHours(0,0,0,0);
+  const meetMid=new Date(nx.dt);meetMid.setHours(0,0,0,0);
+  const dayDiff=Math.round((meetMid-todayMid)/86400000);
+  const when=dayDiff===0?(diff<3600000?'soon':`in ${Math.floor(diff/3600000)}h`):dayDiff===1?'tomorrow':`in ${dayDiff}d`;
+  el.innerHTML=`<span class="meet-chip">📅 ${nx.label} ${when}</span>`;
+}
+
+/* ═══ HELPERS ═══ */
+function ldr(w){return MEM[(w-1)%MEM.length];}
+function kk(w,i){return `w${w}_${i}`;}
+function av(m,s){return `<div class="av" style="width:${s}px;height:${s}px;background:${m.bg};color:${m.cl};font-size:${Math.floor(s*.32)}px;">${m.init}</div>`;}
+function fmt12(t){if(!t)return '';const[h,m]=t.split(':');const hh=+h;return `${hh===0?12:hh>12?hh-12:hh}:${m} ${hh<12?'AM':'PM'} MT`;}
+function fmtDur(min){return +min<60?`${min} min`:+min===60?'1 hr':`${min/60} hrs`;}
+function fmtTs(ts){if(!ts)return '';const d=Date.now()-ts;if(d<60000)return 'just now';if(d<3600000)return `${Math.floor(d/60000)}m ago`;if(d<86400000)return `${Math.floor(d/3600000)}h ago`;return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
+function fmtDuration(ts){if(!ts)return '';const d=Date.now()-ts;if(d<3600000)return `${Math.floor(d/60000)}m`;if(d<86400000)return `${Math.floor(d/3600000)}h`;return `${Math.floor(d/86400000)}d`;}
+function detectWeek(){
+  const ends=[new Date('2026-04-05'),new Date('2026-04-12'),new Date('2026-04-19'),new Date('2026-04-26'),new Date('2026-05-03'),new Date('2026-05-10'),new Date('2026-05-17'),new Date('2026-05-24'),new Date('2026-05-31'),new Date('2026-06-13')];
+  for(let i=0;i<ends.length;i++)if(TODAY<=ends[i])return i+1;return 10;
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function urgClass(due,done){
+  if(done)return 'urg-ok';
+  const d=new Date(due);d.setHours(0,0,0,0);
+  const diff=Math.floor((d-TODAY)/86400000);
+  if(diff<0)return 'urg-overdue';if(diff===0)return 'urg-today';if(diff<=7)return 'urg-soon';return 'urg-ok';
+}
+function urgText(due,done){
+  if(done)return '';
+  const d=new Date(due);d.setHours(23,59,0,0);
+  const now=new Date();
+  const diffMs=d-now;
+  const diffDays=Math.floor((new Date(due).setHours(0,0,0,0)-TODAY.getTime())/86400000);
+  if(diffDays===0){
+    if(diffMs<0)return 'Overdue today';
+    const h=Math.floor(diffMs/3600000);
+    const m=Math.floor((diffMs%3600000)/60000);
+    return h>0?`Due in ${h}h ${m}m`:`Due in ${m}m`;
+  }
+  if(diffDays<0)return `${Math.abs(diffDays)}d overdue`;
+  if(diffDays===1)return 'Due tomorrow';
+  if(diffDays<=7)return `Due in ${diffDays}d`;
+  return `Due ${new Date(due).toLocaleDateString('en-US',{month:'short',day:'numeric'})}`;
+}
+
+const SCYCLE={todo:'working',working:'review',review:'todo'};
+const SLBL={todo:'Not started',working:'Working on it',review:'Needs review'};
+const SCLS={todo:'sp-todo',working:'sp-working',review:'sp-review'};
+
+function updateBadge(){
+  const b=document.getElementById('new-badge');if(!b)return;
+  if(newCount>0){b.textContent=newCount>9?'9+':newCount;b.style.display='';}
+  else b.style.display='none';
+}
+
+/* ═══ TABS ═══ */
+const TABS=['upcoming','week','mine','schedule','projects','log','guide'];
+function sw(t){
+  if(searchQ)clearSearch();
+  tab=t;
+  TABS.forEach(id=>document.getElementById('tab-'+id).style.display=id===t?'':'none');
+  document.getElementById('tab-search').style.display='none';
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',TABS[i]===t));
+  if(t==='log'){newCount=0;lastSeen=Date.now();updateBadge();}
+  renderCur();
+}
+
+function saveCommentInputs(){const s={};document.querySelectorAll('[id^="ci-"]').forEach(el=>{if(el.value.trim())s[el.id]=el.value;});return s;}
+function restoreCommentInputs(s){Object.entries(s).forEach(([id,val])=>{const el=document.getElementById(id);if(el){el.value=val;el.focus();}});}
+function renderAll(){const ci=saveCommentInputs();renderDueToday();renderCur();restoreCommentInputs(ci);}
+function renderCur(){const ci=saveCommentInputs();
+  if(searchQ){rSearch();restoreCommentInputs(ci);return;}
+  if(tab==='upcoming')rUpcoming();
+  else if(tab==='week')rWeek();
+  else if(tab==='mine')rMine();
+  else if(tab==='schedule')rSched();
+  else if(tab==='projects')rProj();
+  else if(tab==='log')rLog();
+  else if(tab==='guide')rGuide();
+  restoreCommentInputs(ci);
+}
+
+/* ═══ SEARCH ═══ */
+function onSearch(q){
+  searchQ=q.trim().toLowerCase();
+  document.getElementById('sclear').style.display=searchQ?'':'none';
+  if(searchQ){
+    TABS.forEach(id=>document.getElementById('tab-'+id).style.display='none');
+    document.getElementById('tab-search').style.display='';
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+    rSearch();
+  }else{clearSearch();}
+}
+function clearSearch(){
+  searchQ='';document.getElementById('search-input').value='';
+  document.getElementById('sclear').style.display='none';
+  document.getElementById('tab-search').style.display='none';
+  sw(tab);
+}
+function rSearch(){
+  const res=[];
+  Object.entries(AS).forEach(([w,items])=>items.forEach((a,i)=>{if(a.n.toLowerCase().includes(searchQ))res.push({w:+w,i,a});}));
+  document.getElementById('tab-search').innerHTML=res.length
+    ?`<div style="font-size:12px;color:var(--t3);padding:10px 0 6px;">${res.length} result${res.length!==1?'s':''}</div><div class="card alist">${res.map(r=>aHtml(r.a,r.w,r.i,true)).join('')}</div>`
+    :`<div class="empty">No results for "${esc(searchQ)}"</div>`;
+}
+
+/* ═══ UPCOMING ═══ */
+function rUpcoming(){
+  const items=[];
+  Object.entries(AS).forEach(([w,asgns])=>asgns.forEach((a,i)=>items.push({w:+w,i,a,s:fbState[kk(w,i)]||{},due:new Date(a.due)})));
+  items.sort((a,b)=>a.due-b.due);
+
+  const grps={overdue:[],today:[],week:[],later:[]};
+  items.forEach(it=>{
+    if(it.s.done)return;
+    const d=new Date(it.due);d.setHours(0,0,0,0);
+    const diff=Math.floor((d-TODAY)/86400000);
+    if(diff<0)grps.overdue.push(it);
+    else if(diff===0)grps.today.push(it);
+    else if(diff<=7)grps.week.push(it);
+    else grps.later.push(it);
+  });
+
+  let tot=0,comp=0;
+  Object.entries(AS).forEach(([w,asgns])=>asgns.forEach((_,i)=>{tot++;if(fbState[kk(w,i)]?.done)comp++;}));
+  const pct=tot?Math.round(comp/tot*100):0;
+
+  let h=`<div class="sgrid" style="margin-top:14px;">
+    <div class="scard"><div class="slbl">Quarter progress</div><div class="sval">${pct}<span style="font-size:13px;color:var(--t3);">%</span></div></div>
+    <div class="scard"><div class="slbl">Remaining</div><div class="sval" style="color:${grps.overdue.length?'var(--red)':'var(--t1)'}">${tot-comp}</div></div>
+    <div class="scard"><div class="slbl">Overdue</div><div class="sval" style="color:${grps.overdue.length?'var(--red)':'var(--green)'}">${grps.overdue.length}</div></div>
+  </div>
+  <div class="prow"><div class="pmeta"><span>${comp} of ${tot} done</span><span>${pct}%</span></div>
+  <div class="prog"><div class="pf ${pct===100?'full':''}" style="width:${pct}%"></div></div></div>`;
+
+  const grpHtml=(its,cls,label)=>{
+    if(!its.length)return '';
+    return `<div class="upcoming-group ${cls}"><div class="ug-label">${label} (${its.length})</div>
+    ${its.map(it=>`<div class="up-row" onclick="goToAssignment(${it.w},${it.i})">
+      <div class="up-content">
+        <div class="up-name">${esc(it.a.n)}</div>
+        <div class="up-meta">
+          <span class="badge ${it.a.c==='q'?'bq':'bo'}">${it.a.c==='q'?'QMETH':'OPMGT'}</span>
+          <span class="${urgClass(it.due,false)}">${urgText(it.due,false)}</span>
+          <span style="font-size:11px;color:var(--t3);">Wk ${it.w} · ${ldr(it.w).name}</span>
+          ${it.s.owner?`<span class="otag">👤 ${esc(it.s.owner)}</span>`:''}
+          ${it.s.status&&it.s.status!=='todo'?`<span class="spill ${SCLS[it.s.status]}">${SLBL[it.s.status]}</span>`:''}
+        </div>
+      </div><span style="color:var(--t3);font-size:16px;">›</span>
+    </div>`).join('')}
+    </div>`;
+  };
+
+  h+=grpHtml(grps.overdue,'ug-overdue','⚠ Overdue');
+  h+=grpHtml(grps.today,'ug-today','🔥 Due today');
+  h+=grpHtml(grps.week,'ug-week','📅 This week');
+  h+=grpHtml(grps.later,'ug-later','Upcoming');
+  if(showCompleted){
+    const done=items.filter(it=>it.s.done);
+    if(done.length)h+=`<div class="upcoming-group ug-later"><div class="ug-label" style="color:var(--green);">✓ Completed (${done.length})</div>${done.map(it=>`<div class="up-row done-row" onclick="goToAssignment(${it.w},${it.i})"><div class="up-content"><div class="up-name">${esc(it.a.n)}</div><div class="up-meta"><span class="badge ${it.a.c==='q'?'bq':'bo'}">${it.a.c==='q'?'QMETH':'OPMGT'}</span><span style="font-size:11px;color:var(--green);">✓ ${esc(it.s.doneBy||'')}</span><span style="font-size:11px;color:var(--t3);">Wk ${it.w}</span></div></div></div>`).join('')}</div>`;
+  }
+  if(!grps.overdue.length&&!grps.today.length&&!grps.week.length&&!grps.later.length&&!showCompleted)
+    h+='<div class="empty" style="margin-top:2rem;">🎉 All caught up!</div>';
+  // Add toggle button at bottom
+  h+=`<div style="text-align:center;margin-top:14px;"><button class="nbtn" onclick="showCompleted=!showCompleted;rUpcoming();">${showCompleted?'Hide completed':'Show completed ('+comp+')'}</button></div>`;
+  document.getElementById('tab-upcoming').innerHTML=h;
+}
+
+function goToAssignment(w,i){curW=w;saveUser();sw('week');setTimeout(()=>{const el=document.querySelector(`[data-k="${kk(w,i)}"]`);if(el)el.scrollIntoView({behavior:'smooth',block:'center'});},100);}
+
+/* ═══ THIS WEEK ═══ */
+function rWeek(){
+  const wk=WK[curW-1],m=ldr(curW),asgns=AS[curW]||[];
+  const tot=asgns.length,comp=asgns.filter((_,i)=>fbState[kk(curW,i)]?.done).length;
+  const pct=tot?Math.round(comp/tot*100):0;
+  const s=fbSettings;
+  const isLeader=me===m.name;
+  const ln=fbLeaderNotes[`w${curW}`];
+
+  document.getElementById('tab-week').innerHTML=`
+  <div class="wnav-row">
+    <button class="nb" onclick="chW(-1)" ${curW<=1?'disabled':''}>←</button>
+    <div class="wtitle">Week ${curW}<span class="wrange">${wk.r}</span></div>
+    <button class="nb" onclick="chW(1)" ${curW>=10?'disabled':''}>→</button>
+  </div>
+  <div class="sgrid">
+    <div class="scard"><div class="slbl">Leader</div><div class="sval" style="font-size:17px;margin-top:2px;">${m.name.split(' ')[0]}</div></div>
+    <div class="scard"><div class="slbl">Assignments</div><div class="sval">${tot}</div></div>
+    <div class="scard"><div class="slbl">Done</div><div class="sval">${comp}<span style="font-size:13px;color:var(--t3);">/${tot}</span></div></div>
+  </div>
+  <div class="prow"><div class="pmeta"><span>${pct}% complete</span><span>${comp}/${tot} done</span></div>
+  <div class="prog"><div class="pf ${pct===100?'full':''}" style="width:${pct}%"></div></div></div>
+
+  <div class="sec"><div class="sechd">Week leader</div>
+  <div class="card lcard">${av(m,44)}<div style="flex:1;">
+    <div class="lname">${m.name}${isLeader?' <span class="badge bl">That\'s you!</span>':''}</div>
+    <div class="lsub">Week ${curW} of 10 &nbsp;·&nbsp; <span class="badge bl">Leader</span></div>
+  </div></div>
+  <div class="leader-notes-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${ln?.text?'6':'0'}px;">
+      <span style="font-size:11px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;">Leader notes</span>
+      ${isLeader?`<button class="ln-edit-btn" onclick="openLeaderNotes(${curW})">${ln?.text?'Edit notes':'+ Add notes'}</button>`:`<span style="font-size:11px;color:var(--t3);">${ln?.text?'':'No notes yet'}</span>`}
+    </div>
+    ${ln?.text?`<div class="ln-content">${esc(ln.text)}</div><div class="ln-meta">${esc(ln.by||'')}${ln.ts?' · '+fmtTs(ln.ts):''}</div>`:''}
+  </div></div>
+
+  <div class="sec"><div class="sechd"><span>Meetings</span><button class="nbtn" onclick="openSettings()">Adjust</button></div>
+  <div class="card mlist">${meetHtml(wk,s)}</div></div>
+
+  <div class="sec"><div class="sechd">Team activity</div>
+  <div class="team-grid">${buildTeamGrid(curW)}</div></div>
+
+  <div class="sec"><div class="sechd"><span>Team assignments</span>
+    <div style="display:flex;gap:6px;">
+      ${comp<tot?`<button class="nbtn" onclick="markAllDone(${curW})" style="color:var(--green);border-color:var(--green);">✓ All done</button>`:''}
+      <button class="nbtn" onclick="copyWeeklySummary(${curW})">📋 Teams digest</button>
+    </div>
+  </div>
+  <div class="card alist">${tot?asgns.map((a,i)=>aHtml(a,curW,i)).join(''):'<div class="empty">No team assignments this week</div>'}</div></div>`;
+}
+
+function meetHtml(wk,s){
+  const now=new Date();
+  const link=s.meetLink||'';
+  const joinBtn=link?`<a href="${esc(link)}" target="_blank" style="font-size:11px;background:#6264a7;color:#fff;padding:3px 10px;border-radius:10px;text-decoration:none;font-weight:500;white-space:nowrap;">🟣 Join Teams</a>`:'';
+  function soon(dow,t){const d=new Date();let diff=dow-d.getDay();if(diff<0)diff+=7;d.setDate(d.getDate()+diff);const[h,m]=t.split(':');d.setHours(+h,+m,0,0);const ms=d-now;return ms>0&&ms<172800000;}
+  return `
+  <div class="mrow"><div class="micon mi-s">📅</div><div class="minfo">
+    <div class="mname">Weekend Work Session ${soon(6,s.satTime||'10:00')?'<span class="meet-soon-pill">Soon!</span>':''}</div>
+    <div class="mtime">Sat ${wk.sat} · ${fmt12(s.satTime)} · ${fmtDur(s.satDur)}</div></div>${joinBtn}<span class="badge bm">Sat</span></div>
+  <div class="mrow" ${wk.prep?'':'style="border-bottom:none;"'}><div class="micon mi-s">🔄</div><div class="minfo">
+    <div class="mname">Weekly Sync ${soon(3,s.wedTime||'17:30')?'<span class="meet-soon-pill">Soon!</span>':''}</div>
+    <div class="mtime">Wed ${wk.wd} · ${fmt12(s.wedTime)} · ${fmtDur(s.wedDur)}</div></div>${joinBtn}<span class="badge bm">Wed</span></div>
+  ${wk.prep?`<div class="mrow" style="border-bottom:none;"><div class="micon mi-p">⚡</div><div class="minfo">
+    <div class="mname">Littlefield Memo Prep</div>
+    <div class="mtime">Sun May 24 · ${fmt12(s.prepTime)} · 1 hr</div></div>${joinBtn}<span class="badge bp">Prep</span></div>`:''}`;
+}
+
+/* ═══ MY TASKS ═══ */
+function rMine(){
+  const filters=[{k:'mine',l:'My activity'},{k:'owner',l:'I own'},{k:'working',l:'Working on'},{k:'todo',l:'Not started'},{k:'done',l:'I completed'}];
+  let h=`<div class="my-tasks-filter">${filters.map(f=>`<button class="mf-btn ${mineFilter===f.k?'on':''}" onclick="setMineFilter('${f.k}')">${f.l}</button>`).join('')}</div>`;
+
+  const myItems=[];
+  Object.entries(AS).forEach(([w,asgns])=>{
+    asgns.forEach((a,i)=>{
+      const s=fbState[kk(w,i)]||{};
+      let include=false;
+      if(mineFilter==='mine')include=s.owner===me||s.doneBy===me||s.statusBy===me||s.noteBy===me||Object.values(fbComments[kk(w,i)]||{}).some(c=>c.by===me);
+      else if(mineFilter==='owner'&&s.owner===me)include=true;
+      else if(mineFilter==='working'&&s.status==='working'&&!s.done)include=true;
+      else if(mineFilter==='todo'&&!s.done&&(!s.status||s.status==='todo'))include=true;
+      else if(mineFilter==='done'&&s.done&&s.doneBy===me)include=true;
+      if(include)myItems.push({w:+w,i,a,s});
+    });
+  });
+
+  if(!myItems.length){
+    h+='<div class="empty" style="margin-top:2rem;">Nothing here — assign yourself to some tasks!</div>';
+    document.getElementById('tab-mine').innerHTML=h;return;
+  }
+
+  // Group by week
+  const byWeek={};
+  myItems.forEach(it=>{if(!byWeek[it.w])byWeek[it.w]=[];byWeek[it.w].push(it);});
+
+  let tot=myItems.length,comp=myItems.filter(it=>it.s.done).length;
+  h+=`<div class="sgrid" style="margin-top:12px;">
+    <div class="scard"><div class="slbl">Showing</div><div class="sval">${tot}</div></div>
+    <div class="scard"><div class="slbl">Done</div><div class="sval" style="color:var(--green)">${comp}</div></div>
+    <div class="scard"><div class="slbl">Left</div><div class="sval">${tot-comp}</div></div>
+  </div>`;
+
+  Object.entries(byWeek).sort((a,b)=>a[0]-b[0]).forEach(([w,its])=>{
+    const wk=WK[+w-1],m=ldr(+w);
+    h+=`<div class="sec"><div class="sechd"><span>Week ${w} · ${wk.r}</span><span style="font-size:11px;color:var(--t3);">Led by ${m.name}</span></div>
+    <div class="card alist">${its.map(it=>aHtml(it.a,it.w,it.i)).join('')}</div></div>`;
+  });
+  document.getElementById('tab-mine').innerHTML=h;
+}
+function setMineFilter(f){mineFilter=f;rMine();}
+
+/* ═══ ASSIGNMENT ROW ═══ */
+function toggleBlocked(k,w,i){
+  if(!me){toast('Pick your name first','terr');return;}
+  const cur=fbBlocked[k];
+  if(cur&&cur.by===me){
+    // Unblock
+    db.ref(`t5/blocked/${k}`).remove();
+    delete fbBlocked[k];
+    db.ref('t5/actlog').push({who:me,action:'resolved a block on',label:AS[+w]?.[+i]?.n||k,ts:firebase.database.ServerValue.TIMESTAMP});
+    toast('Block resolved ✓','tok');
+  } else {
+    // Block
+    db.ref(`t5/blocked/${k}`).set({by:me,ts:firebase.database.ServerValue.TIMESTAMP});
+    fbBlocked[k]={by:me,ts:Date.now()};
+    db.ref('t5/actlog').push({who:me,action:'is blocked on',label:AS[+w]?.[+i]?.n||k,ts:firebase.database.ServerValue.TIMESTAMP});
+    toast('Block flagged — teammates will be notified','twarn');
+  }
+  renderCur();
+}
+
+function memberAv(name){const m=MEM.find(x=>x.name===name);if(!m)return '';return `<span class="dby-av" style="background:${m.bg};color:${m.cl};">${m.init}</span>`;}
+function toggleLink(k){linkOpen[k]=!linkOpen[k];if(linkOpen[k]){ownerOpen[k]=false;commentOpen[k]=false;}renderCur();}
+function saveLink(k){
+  if(!me){toast('Pick your name first','terr');return;}
+  const url=(document.getElementById('li-'+k)?.value||'').trim();
+  const label=(document.getElementById('ll-'+k)?.value||'').trim();
+  if(!url){delLink(k);return;}
+  const cleanUrl=url.startsWith('http')?url:'https://'+url;
+  db.ref(`t5/links/${k}`).set({url:cleanUrl,label:label||'Shared doc',by:me,ts:firebase.database.ServerValue.TIMESTAMP});
+  fbLinks[k]={url:cleanUrl,label:label||'Shared doc',by:me};
+  linkOpen[k]=false;renderCur();toast('Link saved','tok');
+}
+function delLink(k){db.ref(`t5/links/${k}`).remove();delete fbLinks[k];linkOpen[k]=false;renderCur();}
+
+function aHtml(a,w,i,showWk=false){
+  const k=kk(w,i),s=fbState[k]||{};
+  const isDone=!!s.done,owOp=!!ownerOpen[k],comOp=!!commentOpen[k],lnkOp=!!linkOpen[k],grOp=!!gradeOpen[k],pnOp=!!privNoteOpen[k];
+  const status=s.status||'todo';
+  const thread=fbComments[k]?Object.entries(fbComments[k]).sort((a,b)=>(a[1].ts||0)-(b[1].ts||0)):[];
+  const link=fbLinks[k];
+  const blocked=fbBlocked[k]||null;
+  const grade=fbGrades[k]||null;
+  const privNote=privateNotes[k]||'';
+  const isNew=(s.doneTs||s.statusTs||0)>lastSeen&&(s.doneBy||s.statusBy)!==me;
+
+  return `<div class="arow${isDone?' done-row':''} ${blocked&&!isDone?'blocked-row':''}" data-k="${k}">
+    <div class="atop">
+      <input type="checkbox" ${isDone?'checked':''} onchange="tog(${w},${i})"/>
+      <div style="flex:1;">
+        <div class="aname">${esc(a.n)}${isNew?'<span class="new-pill" style="margin-left:6px;">NEW</span>':''}</div>
+        <div class="ameta">
+          <span class="badge ${a.c==='q'?'bq':'bo'}">${a.c==='q'?'QMETH':'OPMGT'}</span>
+          ${isDone?`<span class="doneby">${memberAv(s.doneBy)}${esc(s.doneBy||'')} · ${fmtTs(s.doneTs)}</span>`:`<span class="${urgClass(a.due,false)}">${urgText(a.due,false)}</span>`}
+          ${showWk?`<span style="font-size:11px;color:var(--t3);">Wk ${w}</span>`:''}
+          ${!isDone?`<button class="spill ${SCLS[status]}" onclick="cycleStatus('${k}')">${SLBL[status]}</button>`:''}
+          ${s.owner?`<span class="otag">${memberAv(s.owner)}${esc(s.owner.split(' ')[0])}</span>`:''}
+          ${link?`<a href="${esc(link.url)}" target="_blank" class="link-chip">🔗 ${esc(link.label||'Doc')}</a>`:''}
+          ${a.pts?`<span class="pts-tag">${a.pts}pts</span>`:''}
+          ${blocked?`<button class="blocked-pill" onclick="toggleBlocked('${k}',${w},${i})">${blocked.by===me?'✓ Unblock':'🚨 '+esc(blocked.by)+' · '+fmtDuration(blocked.ts)}</button>`:(!isDone?`<button class="nbtn" onclick="toggleBlocked('${k}',${w},${i})" title="Flag as blocked">🚨</button>`:'')}
+          ${isDone&&grade?`<span class="grade-chip" onclick="gradeOpen['${k}']=!gradeOpen['${k}'];renderCur()">${grade.score}/${grade.max} · ${Math.round(grade.score/grade.max*100)}%</span>`:isDone?`<button class="nbtn" onclick="gradeOpen['${k}']=!gradeOpen['${k}'];renderCur()">+ Grade</button>`:''}
+          ${starsHtml('${k}',isDone)}
+          <button class="nbtn" onclick="togglePrivNote('${k}')" title="${privNote?'Edit private note':'Add private note (only you see this)'}">📓${privNote?'✓':''}</button>
+          <button class="nbtn" onclick="toggleOwner('${k}')">${s.owner?'👤 Change':'+ Owner'}</button>
+          <button class="nbtn" onclick="toggleLink('${k}')">${link?'🔗 Edit':'🔗 Link'}</button>
+          <button class="nbtn" onclick="toggleComment('${k}')">💬${thread.length?' '+thread.length:''}</button>
+        </div>
+      </div>
+    </div>
+    ${owOp?`<div class="owner-drop">${MEM.map(m=>`<button class="op" onclick="setOwner('${k}','${m.name}')">${av(m,20)} ${m.name.split(' ')[0]}</button>`).join('')}<button class="op" style="color:var(--red);" onclick="setOwner('${k}','')">Clear</button></div>`:''}
+    ${lnkOp?`<div class="link-edit-wrap">
+      <input class="link-input" id="li-${k}" placeholder="https://docs.google.com/…" value="${link?esc(link.url):''}"/>
+      <input class="link-input" id="ll-${k}" placeholder="Label e.g. Shared Doc" style="max-width:130px;" value="${link?esc(link.label||''):''}"/>
+      <button class="comment-submit" onclick="saveLink('${k}')">Save</button>
+      ${link?`<button class="nbtn" onclick="delLink('${k}')" style="color:var(--red);">Remove</button>`:''}
+    </div>`:''}
+    ${grOp?`<div class="grade-input-wrap">
+      <span style="font-size:12px;color:var(--t2);">Score:</span>
+      <input class="grade-num" id="gs-${k}" type="number" min="0" placeholder="87" value="${grade?grade.score:''}"/>
+      <span style="font-size:12px;color:var(--t2);">/</span>
+      <input class="grade-num" id="gm-${k}" type="number" min="1" placeholder="${a.pts||100}" value="${grade?grade.max:a.pts||100}"/>
+      <button class="comment-submit" onclick="logGrade('${k}')">Save</button>
+      ${grade?`<button class="nbtn" onclick="db.ref('t5/grades/${k}').remove();delete fbGrades['${k}'];gradeOpen['${k}']=false;renderCur();" style="color:var(--red);">Remove</button>`:''}
+      <button class="nbtn" onclick="gradeOpen['${k}']=false;renderCur()">Cancel</button>
+    </div>`:''}
+    ${pnOp?`<div class="privnote-edit">
+      <textarea class="privnote-ta" id="pn-${k}" placeholder="Private notes — only visible to you on this device…">${privNote}</textarea>
+      <div class="nacts" style="margin-top:4px;">
+        <button class="comment-submit" onclick="savePrivNote('${k}')">Save</button>
+        ${privNote?`<button class="nbtn" onclick="delPrivNote('${k}')" style="color:var(--red);">Delete</button>`:''}
+        <button class="nbtn" onclick="privNoteOpen['${k}']=false;renderCur()">Cancel</button>
+      </div>
+    </div>`:(privNote&&!pnOp?`<div class="privnote-box"><div class="privnote-label">📓 Private note</div><div class="privnote-text">${esc(privNote)}</div></div>`:'')}
+    ${comOp?`<div class="comment-thread">
+      ${thread.map(([cid,c])=>`<div class="comment-item">
+        <div class="comment-text">${memberAv(c.by)}${esc(c.text)}</div>
+        <div class="comment-meta">${esc(c.by||'')} · ${fmtTs(c.ts)}
+          ${c.by===me?`<button class="comment-del" onclick="delComment('${k}','${cid}')">Delete</button>`:''}
+        </div>
+      </div>`).join('')}
+      <div class="comment-input-wrap">
+        <input class="comment-input" id="ci-${k}" placeholder="Add a comment… (Enter to post)" onkeydown="if(event.key==='Enter')submitComment('${k}')"/>
+        <button class="comment-submit" onclick="submitComment('${k}')">Post</button>
+      </div>
+    </div>`:''}
+  </div>`;
+}
+
+/* ═══ SCHEDULE ═══ */
+function rSched(){
+  const s=fbSettings;let h='';
+  WK.forEach(w=>{
+    const m=ldr(w.n),asgns=AS[w.n]||[];
+    const tot=asgns.length,comp=asgns.filter((_,i)=>fbState[kk(w.n,i)]?.done).length;
+    const pct=tot?Math.round(comp/tot*100):0;
+    const isCur=w.n===curW;
+    h+=`<div class="srow${isCur?' cur':''}" onclick="goWk(${w.n})">
+      <div class="wn">${String(w.n).padStart(2,'0')}</div>${av(m,28)}
+      <div class="sbody">
+        <div class="sldr">${m.name}${isCur?' <span class="badge bl">Now</span>':''}</div>
+        <div class="srng">${w.r} · ${comp}/${tot} done</div>
+        <div class="schips">
+          <span class="chip cm">Sat ${w.sat} ${fmt12(s.satTime)}</span>
+          <span class="chip cm">Wed ${w.wd} ${fmt12(s.wedTime)}</span>
+          ${w.prep?`<span class="chip cpx">May 24 prep</span>`:''}
+        </div>
+        <div class="prog-sm"><div class="pf-sm ${pct===100?'full':''}" style="width:${pct}%"></div></div>
+      </div></div>`;
+  });
+  document.getElementById('tab-schedule').innerHTML=`<div class="card sched-card">${h}</div>`;
+}
+
+/* ═══ PROJECTS ═══ */
+function rProj(){
+  let tot=0,comp=0;
+  Object.entries(AS).forEach(([w,items])=>items.forEach((_,i)=>{tot++;if(fbState[kk(w,i)]?.done)comp++;}));
+  const pct=Math.round(comp/tot*100);
+  // Tally grades
+  let totalPts=0,earnedPts=0,gradedCount=0;
+  Object.entries(AS).forEach(([w,items])=>items.forEach((_,i)=>{
+    const g=fbGrades[kk(w,i)];
+    if(g){earnedPts+=g.score;totalPts+=g.max;gradedCount++;}
+  }));
+  const gradeAvg=gradedCount?Math.round(earnedPts/totalPts*100):null;
+  let h=`<div class="card ptotal" style="margin-top:12px;">
+    <div class="pti"><div class="ptv">${tot}</div><div class="ptl">Total</div></div>
+    <div class="pti"><div class="ptv" style="color:var(--green)">${comp}</div><div class="ptl">Done</div></div>
+    <div class="pti"><div class="ptv" style="color:${gradeAvg>=90?'var(--green)':gradeAvg>=80?'var(--accent)':gradeAvg?'var(--amber)':'var(--t3)'}">${gradeAvg!==null?gradeAvg+'%':'—'}</div><div class="ptl">Avg score</div></div>
+  </div>
+  <div class="prow" style="margin-top:4px;"><div class="prog"><div class="pf ${pct===100?'full':''}" style="width:${pct}%"></div></div></div>`;
+  Object.entries(AS).forEach(([w,items])=>{
+    const m=ldr(+w),wk=WK[+w-1];
+    const wc=items.filter((_,i)=>fbState[kk(w,i)]?.done).length;
+    const wp=Math.round(wc/items.length*100);
+    h+=`<div class="sec"><div class="sechd">
+      <span>Wk ${w} · ${wk.r} · ${m.name}</span>
+      <span style="color:${wp===100?'var(--green)':'var(--t3)'};">${wc}/${items.length}${wp===100?' ✓':''}</span>
+    </div>
+    <div class="card alist">${items.map((a,i)=>aHtml(a,+w,i)).join('')}</div></div>`;
+  });
+  document.getElementById('tab-projects').innerHTML=h;
+}
+
+/* ═══ ACTIVITY ═══ */
+function rLog(){
+  if(!db){document.getElementById('tab-log').innerHTML='<div class="empty">Connecting…</div>';return;}
+  db.ref('t5/actlog').limitToLast(80).on('value',snap=>{
+    const el=document.getElementById('tab-log');if(!el||tab!=='log')return;
+    const logs=Object.values(snap.val()||{}).sort((a,b)=>b.ts-a.ts);
+    if(!logs.length){el.innerHTML='<div class="empty" style="margin-top:2rem;">No activity yet.</div>';return;}
+    el.innerHTML=`<div class="card actlog" style="margin-top:12px;">${logs.map(e=>{
+      const m=MEM.find(x=>x.name===e.who)||{bg:'#555'};
+      return `<div class="actrow"><div class="adot" style="background:${m.bg};"></div>
+        <div class="act-txt"><strong>${esc(e.who||'?')}</strong> ${esc(e.action)} <em>${esc(e.label)}</em></div>
+        <div class="act-time">${fmtTs(e.ts)}</div></div>`;
+    }).join('')}</div>`;
+  });
+}
+
+/* ═══ INTERACTIONS ═══ */
+function tog(w,i){
+  if(!me){toast('Pick your name first','terr');openPicker();return;}
+  const k=kk(w,i),s=fbState[k]||{},isDone=!!s.done;
+  db.ref(`t5/state/${k}`).update({done:!isDone,doneBy:me,doneTs:firebase.database.ServerValue.TIMESTAMP});
+  if(isDone){
+    // Unchecking — reset status back to todo
+    db.ref(`t5/state/${k}/status`).set('todo');
+  }
+  db.ref('t5/actlog').push({who:me,action:isDone?'unchecked':'marked done',label:AS[w]?.[i]?.n||k,ts:firebase.database.ServerValue.TIMESTAMP});
+  fbState[k]={...s,done:!isDone,doneBy:me,doneTs:Date.now()};
+  renderAll();
+}
+
+function cycleStatus(k){
+  if(!me){toast('Pick your name first','terr');return;}
+  const s=fbState[k]||{};if(s.done)return;
+  const next=SCYCLE[s.status||'todo'];
+  db.ref(`t5/state/${k}`).update({status:next,statusBy:me,statusTs:firebase.database.ServerValue.TIMESTAMP});
+  db.ref('t5/actlog').push({who:me,action:`set "${SLBL[next]}" on`,label:k,ts:firebase.database.ServerValue.TIMESTAMP});
+  fbState[k]={...s,status:next,statusBy:me};renderCur();
+}
+
+function toggleOwner(k){ownerOpen[k]=!ownerOpen[k];if(ownerOpen[k])commentOpen[k]=false;renderCur();}
+function toggleComment(k){commentOpen[k]=!commentOpen[k];if(commentOpen[k])ownerOpen[k]=false;renderCur();setTimeout(()=>{const el=document.getElementById('ci-'+k);if(el)el.focus();},40);}
+
+function setOwner(k,name){
+  if(!me){toast('Pick your name first','terr');return;}
+  db.ref(`t5/state/${k}`).update({owner:name||null,ownerTs:firebase.database.ServerValue.TIMESTAMP});
+  if(name)db.ref('t5/actlog').push({who:me,action:`assigned ${name} as owner of`,label:k,ts:firebase.database.ServerValue.TIMESTAMP});
+  ownerOpen[k]=false;fbState[k]={...(fbState[k]||{}),owner:name||null};renderCur();
+}
+
+function submitComment(k){
+  if(!me){toast('Pick your name first','terr');return;}
+  const el=document.getElementById('ci-'+k);if(!el)return;
+  const text=el.value.trim();if(!text)return;
+  const ref=db.ref(`t5/comments/${k}`).push({text,by:me,ts:firebase.database.ServerValue.TIMESTAMP});
+  db.ref('t5/actlog').push({who:me,action:'commented on',label:k,ts:firebase.database.ServerValue.TIMESTAMP});
+  // Optimistic update — show immediately, Firebase will confirm
+  if(!fbComments[k])fbComments[k]={};
+  fbComments[k][ref.key]={text,by:me,ts:Date.now()};
+  el.value='';
+  renderCur();
+}
+
+function delComment(k,cid){
+  db.ref(`t5/comments/${k}/${cid}`).remove();
+  if(fbComments[k])delete fbComments[k][cid];
+  renderCur();
+}
+
+function markAllDone(w){
+  if(!me){toast('Pick your name first','terr');openPicker();return;}
+  const asgns=AS[w]||[];
+  const undone=asgns.filter((_,i)=>!fbState[kk(w,i)]?.done);
+  if(!undone.length){toast('All already done!','tok');return;}
+  if(!confirm(`Mark all ${undone.length} remaining assignment${undone.length>1?'s':''} as done?`))return;
+  asgns.forEach((_,i)=>{
+    if(!fbState[kk(w,i)]?.done){
+      db.ref(`t5/state/${kk(w,i)}`).update({done:true,doneBy:me,doneTs:firebase.database.ServerValue.TIMESTAMP});
+      fbState[kk(w,i)]={...(fbState[kk(w,i)]||{}),done:true,doneBy:me,doneTs:Date.now()};
+    }
+  });
+  db.ref('t5/actlog').push({who:me,action:`marked all week ${w} assignments done`,label:'bulk action',ts:firebase.database.ServerValue.TIMESTAMP});
+  renderAll();toast(`Marked ${undone.length} assignment${undone.length>1?'s':''} done!`,'tok');
+}
+
+function copyWeeklySummary(w){
+  const wk=WK[w-1],m=ldr(w),asgns=AS[w]||[];
+  const s=fbSettings;
+  const done=asgns.filter((_,i)=>fbState[kk(w,i)]?.done);
+  const undone=asgns.filter((_,i)=>!fbState[kk(w,i)]?.done);
+  const lines=[
+    `📋 Team 5 — Week ${w} (${wk.r})`,
+    `Leader: ${m.name}`,
+    '',
+    `✅ Done (${done.length}/${asgns.length}):`,
+    ...done.map(a=>`  · ${a.n}`),
+    ...(undone.length?['',`🔲 Still pending (${undone.length}):`,...undone.map(a=>`  · ${a.n}`)]:[]),
+    '',
+    `Next meetings:`,
+    `  📅 Sat ${wk.sat} @ ${fmt12(s.satTime)}`,
+    `  🔄 Wed ${wk.wd} @ ${fmt12(s.wedTime)}`,
+    ...(s.meetLink?[`  🔗 Join: ${s.meetLink}`]:[]),
+  ];
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(()=>toast('Week summary copied to clipboard!','tok'))
+    .catch(()=>toast('Could not copy — try manually','terr'));
+}
+
+/* ═══ GRADE LOGGER ═══ */
+function logGrade(k){
+  if(!me){toast('Pick your name first','terr');return;}
+  const score=parseFloat(document.getElementById('gs-'+k)?.value);
+  const max=parseFloat(document.getElementById('gm-'+k)?.value)||100;
+  if(isNaN(score)||score<0){toast('Enter a valid score','terr');return;}
+  db.ref(`t5/grades/${k}`).set({score,max,by:me,ts:firebase.database.ServerValue.TIMESTAMP});
+  fbGrades[k]={score,max,by:me};
+  gradeOpen[k]=false;
+  db.ref('t5/actlog').push({who:me,action:`logged ${score}/${max} on`,label:k,ts:firebase.database.ServerValue.TIMESTAMP});
+  renderCur();toast(`Grade logged: ${score}/${max} (${Math.round(score/max*100)}%)`,'tok');
+}
+
+/* ═══ DIFFICULTY RATING ═══ */
+function setRating(k,stars){
+  if(!me){toast('Pick your name first','terr');return;}
+  const cur=fbRatings[k];
+  if(cur&&cur.by===me&&cur.stars===stars){
+    db.ref(`t5/ratings/${k}`).remove();delete fbRatings[k];
+  } else {
+    db.ref(`t5/ratings/${k}`).set({stars,by:me,ts:firebase.database.ServerValue.TIMESTAMP});
+    fbRatings[k]={stars,by:me};
+  }
+  renderCur();
+}
+function starsHtml(k,isDone){
+  if(!isDone)return '';
+  const cur=fbRatings[k]?.stars||0;
+  const myRating=fbRatings[k]?.by===me?cur:0;
+  const tip=['','Easy','Medium','Hard'];
+  return `<span class="stars" title="${tip[myRating]||'Rate difficulty'}">
+    ${[1,2,3].map(s=>`<span class="star${myRating>=s?' on':''}" onclick="setRating('${k}',${s})" title="${tip[s]}">★</span>`).join('')}
+  </span>`;
+}
+
+/* ═══ PRIVATE NOTES ═══ */
+function togglePrivNote(k){privNoteOpen[k]=!privNoteOpen[k];renderCur();setTimeout(()=>{const el=document.getElementById('pn-'+k);if(el){el.focus();el.selectionStart=el.value.length;}},40);}
+function savePrivNote(k){
+  const el=document.getElementById('pn-'+k);if(!el)return;
+  const text=el.value.trim();
+  if(text)privateNotes[k]=text;else delete privateNotes[k];
+  localStorage.setItem('t5_privnotes',JSON.stringify(privateNotes));
+  privNoteOpen[k]=false;renderCur();toast('Private note saved (only you can see this)','tok');
+}
+function delPrivNote(k){delete privateNotes[k];localStorage.setItem('t5_privnotes',JSON.stringify(privateNotes));privNoteOpen[k]=false;renderCur();}
+
+function chW(d){curW=Math.max(1,Math.min(10,curW+d));saveUser();renderCur();}
+
+function buildTeamGrid(w){
+  const asgns=AS[w]||[];
+  return MEM.map(m=>{
+    // Check activity: did this person do anything this week?
+    const doneByMe=asgns.filter((_,i)=>fbState[kk(w,i)]?.done&&fbState[kk(w,i)]?.doneBy===m.name).length;
+    const ownerMe=asgns.filter((_,i)=>fbState[kk(w,i)]?.owner===m.name).length;
+    const commentedMe=asgns.some((_,i)=>Object.values(fbComments[kk(w,i)]||{}).some(c=>c.by===m.name));
+    const isBlocked=asgns.some((_,i)=>fbBlocked[kk(w,i)]?.by===m.name);
+    const isActive=doneByMe>0||ownerMe>0||commentedMe;
+    let stat='';
+    if(doneByMe>0)stat+=`${doneByMe} done `;
+    if(ownerMe>0)stat+=`${ownerMe} owned `;
+    if(commentedMe)stat+='commented';
+    if(!stat&&!isBlocked)stat='no activity yet';
+    return `<div class="tg-cell ${isBlocked?'blocked-cell':isActive?'active':''}">
+      ${av(m,30)}
+      <div style="flex:1;min-width:0;">
+        <div class="tg-name">${m.name.split(' ')[0]}${isBlocked?'<span style="color:var(--red);margin-left:4px;">🚨</span>':''}</div>
+        <div class="tg-stat">${stat.trim()||'no activity yet'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function copyWeeklySummary(w){
+  const wk=WK[w-1],m=ldr(w),asgns=AS[w]||[];
+  const s=fbSettings;
+  const done=asgns.filter((_,i)=>fbState[kk(w,i)]?.done);
+  const undone=asgns.filter((_,i)=>!fbState[kk(w,i)]?.done);
+  const blocked=asgns.filter((_,i)=>fbBlocked[kk(w,i)]);
+  const ln=fbLeaderNotes[`w${w}`];
+  const lines=[
+    `📋 Team 5 — Week ${w} Update (${wk.r})`,
+    `👤 Leader: ${m.name}`,
+    '',
+  ];
+  if(ln?.text)lines.push(`📝 Leader note: ${ln.text}`,'');
+  lines.push(`✅ Done (${done.length}/${asgns.length}):`);
+  done.forEach(a=>lines.push(`  · ${a.n}${a.pts?' ('+a.pts+'pts)':''}`));
+  if(undone.length){lines.push('');lines.push(`🔲 Still pending (${undone.length}):`);undone.forEach(a=>lines.push(`  · ${a.n}${a.pts?' ('+a.pts+'pts)':''}`));}
+  if(blocked.length){lines.push('');lines.push(`🚨 Blocked (${blocked.length}):`);asgns.forEach((_,i)=>{const b=fbBlocked[kk(w,i)];if(b)lines.push(`  · ${asgns[i].n} — ${b.by}`);});}
+  lines.push('');
+  lines.push(`📅 Next meetings:`);
+  lines.push(`  Sat ${wk.sat} @ ${fmt12(s.satTime)} — Weekend session`);
+  lines.push(`  Wed ${wk.wd} @ ${fmt12(s.wedTime)} — Weekly sync`);
+  if(s.meetLink)lines.push(`  🟣 Join Teams: ${s.meetLink}`);
+  lines.push('');
+  lines.push(`🔗 Tracker: https://team5tracker.netlify.app`);
+  navigator.clipboard.writeText(lines.join('\n'))
+    .then(()=>toast('Digest copied — paste into Teams!','tok'))
+    .catch(()=>toast('Could not copy — try manually','terr'));
+}
+function goWk(w){curW=w;sw('week');}
+
+/* ═══ ANNOUNCEMENT ═══ */
+function openAnnouncement(){
+  document.getElementById('ann-input').value=fbAnnounce.text||'';
+  document.getElementById('ann-modal').style.display='flex';
+}
+function saveAnnouncement(){
+  if(!me){toast('Pick your name first','terr');return;}
+  const text=document.getElementById('ann-input').value.trim();
+  if(!text){clearAnnouncement();return;}
+  db.ref('t5/announce').set({text,by:me,ts:firebase.database.ServerValue.TIMESTAMP});
+  closeModal('ann-modal');toast('Announcement pinned for the team','tok');
+}
+function clearAnnouncement(){
+  db.ref('t5/announce').remove();
+  fbAnnounce={};closeModal('ann-modal');renderAnnounce();
+}
+
+/* ═══ LEADER NOTES ═══ */
+function openLeaderNotes(w){
+  const m=ldr(w);
+  if(me!==m.name){toast(`Only ${m.name} can edit leader notes for week ${w}`,'twarn');return;}
+  document.getElementById('ln-modal-title').textContent=`Leader notes — Week ${w}`;
+  document.getElementById('ln-input').value=fbLeaderNotes[`w${w}`]?.text||'';
+  document.getElementById('ln-modal').style.display='flex';
+}
+function saveLeaderNotes(){
+  const text=document.getElementById('ln-input').value.trim();
+  db.ref(`t5/leadernotes/w${curW}`).set({text,by:me,ts:firebase.database.ServerValue.TIMESTAMP});
+  closeModal('ln-modal');fbLeaderNotes[`w${curW}`]={text,by:me,ts:Date.now()};renderCur();toast('Notes saved','tok');
+}
+
+/* ═══ PICKER ═══ */
+function buildPicker(){
+  document.getElementById('pgrid').innerHTML=MEM.map(m=>`
+    <button class="pbtn" onclick="pickMe('${m.name}','${m.bg}','${m.cl}')">${av(m,32)}<span class="pname">${m.name}</span></button>`).join('');
+}
+function openPicker(){document.getElementById('picker-ov').style.display='flex';}
+function pickMe(n,bg,cl){me=n;myBg=bg;myCl=cl;document.getElementById('picker-ov').style.display='none';saveUser();updateYou();setPresence(true);toast(`Welcome, ${n}! 👋`,'tok');renderAll();}
+function updateYou(){
+  document.getElementById('youname').textContent=me||'Pick name';
+  const d=document.getElementById('youdot');const m=MEM.find(x=>x.name===me);
+  d.style.background=myBg;d.style.color=myCl;d.textContent=m?.init||'';
+}
+
+/* ═══ THEME ═══ */
+function toggleTheme(){
+  const cur=document.documentElement.getAttribute('data-theme')||'dark';
+  const next=cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',next);
+  document.getElementById('theme-btn').textContent=next==='dark'?'🌙':'☀️';
+  saveUser();
+}
+
+/* ═══ SETTINGS ═══ */
+function openSettings(){
+  const s=fbSettings;
+  document.getElementById('set-wed').value=s.wedTime||'17:30';
+  document.getElementById('set-wed-d').value=s.wedDur||'30';
+  document.getElementById('set-sat').value=s.satTime||'10:00';
+  document.getElementById('set-sat-d').value=s.satDur||'60';
+  document.getElementById('set-prep').value=s.prepTime||'18:00';
+  document.getElementById('set-meet-link').value=s.meetLink||'';
+  document.getElementById('set-modal').style.display='flex';
+}
+function saveSettings(){
+  const s={wedTime:document.getElementById('set-wed').value,wedDur:document.getElementById('set-wed-d').value,satTime:document.getElementById('set-sat').value,satDur:document.getElementById('set-sat-d').value,prepTime:document.getElementById('set-prep').value,meetLink:document.getElementById('set-meet-link').value.trim()};
+  db.ref('t5/settings').update(s);fbSettings={...fbSettings,...s};
+  closeModal('set-modal');renderAll();updateMeetChip();toast('Settings synced to team','tok');
+}
+
+function resetQuarter(){
+  if(!confirm('This permanently wipes ALL checkboxes, statuses, comments, notes, and links for the whole team. There is no undo.\n\nType "reset" to confirm.'))return;
+  const word=prompt('Type "reset" to confirm:');
+  if(word!=='reset'){toast('Reset cancelled','twarn');return;}
+  db.ref('t5/state').remove();
+  db.ref('t5/comments').remove();
+  db.ref('t5/links').remove();
+  db.ref('t5/blocked').remove();
+  db.ref('t5/leadernotes').remove();
+  db.ref('t5/actlog').remove();
+  db.ref('t5/announce').remove();
+  fbState={};fbComments={};fbLinks={};fbBlocked={};fbGrades={};fbRatings={};fbLeaderNotes={};fbAnnounce={};
+  db.ref('t5/grades').remove();db.ref('t5/ratings').remove();
+  celebratedWeeks=new Set();saveUser();
+  closeModal('set-modal');renderAll();renderAnnounce();
+  toast('Quarter data reset. Fresh start!','tok');
+}
+
+function closeModal(id){document.getElementById(id).style.display='none';}
+document.addEventListener('click',e=>{
+  ['set-modal','ann-modal','ln-modal'].forEach(id=>{if(e.target.id===id)closeModal(id);});
+  if(e.target.id==='picker-ov')document.getElementById('picker-ov').style.display='none';
+});
+
+/* ═══ KEYBOARD ═══ */
+function setupKeyboard(){
+  document.addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
+    if(e.key==='ArrowLeft'||e.key==='ArrowRight'){if(tab==='week'){chW(e.key==='ArrowLeft'?-1:1);}return;}
+    const map={u:'upcoming',w:'week',m:'mine',p:'projects',d:null};
+    if(e.key==='/'){ e.preventDefault();document.getElementById('search-input').focus();return;}
+    if(e.key.toLowerCase()==='d'){toggleTheme();return;}
+    if(e.key.toLowerCase()==='l'){sw('log');return;}
+    if(map[e.key.toLowerCase()]!==undefined&&map[e.key.toLowerCase()]!==null){sw(map[e.key.toLowerCase()]);}
+  });
+}
+
+/* ═══ TOAST ═══ */
+let _tt;
+function toast(msg,cls='tinfo'){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.className=`toast ${cls}`;
+  setTimeout(()=>el.classList.add('show'),10);
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+function rGuide(){
+  document.getElementById('tab-guide').innerHTML=`<div class="guide-wrap">
+
+  <div class="guide-hero">
+    <div style="font-size:36px;">📋</div>
+    <div class="guide-hero-text">
+      <div class="guide-hero-title">Team 5 Tracker — Quick Guide</div>
+      <div class="guide-hero-sub">HMBA Foster · Spring 2026 · 10-week quarter · QMETH 505 + OPMGT 520</div>
+      <div class="guide-url">team5tracker.netlify.app</div>
+    </div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">🚀</div>Getting started</div>
+    <div class="guide-row"><div class="guide-icon">1️⃣</div><div class="guide-content"><div class="guide-label">Open the tracker</div><div class="guide-desc">Go to team5tracker.netlify.app on any device — phone, laptop, or tablet.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">2️⃣</div><div class="guide-content"><div class="guide-label">Pick your name</div><div class="guide-desc">Tap your name from the list. Everything you do gets tagged to you so teammates know who's on what. You only do this once per device.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">3️⃣</div><div class="guide-content"><div class="guide-label">You're live</div><div class="guide-desc">Changes sync instantly to everyone. No refresh needed — the tracker updates in real time.</div></div></div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">📑</div>Tabs</div>
+    <div class="guide-row"><div class="guide-icon">📅</div><div class="guide-content"><div class="guide-label">Upcoming</div><div class="guide-desc">Everything pending sorted by urgency — overdue (red), due today (orange), this week (amber), later. Click any item to jump straight to it. Your home base.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📆</div><div class="guide-content"><div class="guide-label">This Week</div><div class="guide-desc">Current week's leader, meeting times with the 🟣 Teams join button, team activity grid, and this week's assignments.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">👤</div><div class="guide-content"><div class="guide-label">My Tasks</div><div class="guide-desc">Filter to see only assignments you own, are working on, have blocked, or completed. Grouped by week.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">🗓</div><div class="guide-content"><div class="guide-label">Schedule</div><div class="guide-desc">Full 10-week view showing the leader rotation, meeting times, and mini progress bar per week. Click any row to jump to that week.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📋</div><div class="guide-content"><div class="guide-label">All Projects</div><div class="guide-desc">Every assignment across all 10 weeks. Shows your running grade average at the top once you start logging scores.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📣</div><div class="guide-content"><div class="guide-label">Activity</div><div class="guide-desc">Live feed of everything the team has done — checkoffs, comments, grade logs, blocked flags. The badge shows unread updates.</div></div></div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">✅</div>What you can do on each assignment</div>
+    <div class="guide-row"><div class="guide-icon">☑️</div><div class="guide-content"><div class="guide-label">Check it off</div><div class="guide-desc">Marks done and tags your name. When every assignment in a week is done, confetti fires for everyone. Uncheck to revert.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">🔄</div><div class="guide-content"><div class="guide-label">Status pill</div><div class="guide-desc">Click to cycle: Not started → Working on it → Needs review. Lets teammates know where things stand without a message.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">👤</div><div class="guide-content"><div class="guide-label">+ Owner</div><div class="guide-desc">Assign who's taking point. Shows their color-coded avatar on the row. Visible to everyone.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">🔗</div><div class="guide-content"><div class="guide-label">Link</div><div class="guide-desc">Attach your shared Google Drive doc or any URL. Shows as a clickable chip so the whole team can find the doc in one tap.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">💬</div><div class="guide-content"><div class="guide-label">Comments</div><div class="guide-desc">Team discussion thread per assignment. Multiple people, real-time. Good for quick decisions without a full Teams message.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📓</div><div class="guide-content"><div class="guide-label">Private note</div><div class="guide-desc">Only you can see it — stored on your device, never sent to Firebase. Good for personal reminders or rough work.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">⭐</div><div class="guide-content"><div class="guide-label">Rate difficulty</div><div class="guide-desc">After completing, rate it 1–3 stars (Easy / Medium / Hard). Helps future weeks know what to budget time for.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📊</div><div class="guide-content"><div class="guide-label">+ Grade</div><div class="guide-desc">Log your score when it comes back. Rolls up into an average score shown at the top of All Projects. Pre-filled with the point value.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">🚨</div><div class="guide-content"><div class="guide-label">Blocked flag</div><div class="guide-desc">Click if you're stuck. Sends an instant alert to all online teammates. Shows your name and how long you've been blocked. Click again to resolve.</div></div></div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">📌</div>Announcements &amp; leader notes</div>
+    <div class="guide-row"><div class="guide-icon">📌</div><div class="guide-content"><div class="guide-label">Pin an announcement</div><div class="guide-desc">Click the dashed "Pin a team announcement" button at the top. Shows for everyone until cleared. Use for schedule changes, reminders, or anything urgent.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">✍️</div><div class="guide-content"><div class="guide-label">Leader notes</div><div class="guide-desc">The week's leader can write a note on the This Week tab — agenda, focus, priorities. Only the current leader can edit it; everyone can read it.</div></div></div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">📅</div>Meetings (all Mountain Time)</div>
+    <div class="guide-row"><div class="guide-icon">🔄</div><div class="guide-content"><div class="guide-label">Wednesday sync — 5:30 PM MT, 30 min</div><div class="guide-desc">Weekly check-in. Quick updates from the leader, assignment progress, blockers.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📅</div><div class="guide-content"><div class="guide-label">Saturday session — 10:00 AM MT, 1 hour</div><div class="guide-desc">Weekend work session. Collaborate on team deliverables before Sunday night due dates.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">⚡</div><div class="guide-content"><div class="guide-label">Littlefield prep — Sun May 24, 6:00 PM MT, 1 hour</div><div class="guide-desc">One-time extra session for the Littlefield Memo (due Wed May 27 at 4:59 PM MT).</div></div></div>
+    <div class="guide-row"><div class="guide-icon">🟣</div><div class="guide-content"><div class="guide-label">Join Teams</div><div class="guide-desc">The Join Teams button appears on each meeting card once Tyler pastes the Teams link in ⚙ Settings → Meeting video link.</div></div></div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">👑</div>Leader rotation</div>
+    <div class="guide-row"><div class="guide-icon">🔁</div><div class="guide-content"><div class="guide-label">Order</div><div class="guide-desc">Audrey Lu → Amaduesz → Taiwo → Samantha → Andrew → Tyler → repeat. 10 weeks total, so some people lead twice.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📆</div><div class="guide-content"><div class="guide-label">Current leader</div><div class="guide-desc">Shown at the top of This Week with a "That's you!" badge when it's your turn. Full schedule in the Schedule tab.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">✍️</div><div class="guide-content"><div class="guide-label">Leader's job</div><div class="guide-desc">Set the tone with a leader note, make sure assignments have owners, keep the team unblocked, run the Wednesday sync.</div></div></div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">⌨️</div>Keyboard shortcuts</div>
+    <div style="padding-top:4px;">
+      <div class="guide-kbd-row">
+        <div class="guide-kbd"><span class="kbd">/</span> Search</div>
+        <div class="guide-kbd"><span class="kbd">U</span> Upcoming</div>
+        <div class="guide-kbd"><span class="kbd">W</span> This Week</div>
+        <div class="guide-kbd"><span class="kbd">M</span> My Tasks</div>
+        <div class="guide-kbd"><span class="kbd">P</span> All Projects</div>
+        <div class="guide-kbd"><span class="kbd">← →</span> Navigate weeks</div>
+        <div class="guide-kbd"><span class="kbd">D</span> Dark / light mode</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="guide-section">
+    <div class="guide-section-title"><div class="guide-section-icon">💡</div>Tips</div>
+    <div class="guide-row"><div class="guide-icon">🔗</div><div class="guide-content"><div class="guide-label">Attach the shared doc</div><div class="guide-desc">Paste your Google Drive link on each assignment so nobody's asking "where's the doc?" in Teams.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">🔄</div><div class="guide-content"><div class="guide-label">Use status tags</div><div class="guide-desc">"Working on it" and "Needs review" prevent duplicate work and tell teammates when something's ready to hand off.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📋</div><div class="guide-content"><div class="guide-label">Teams digest</div><div class="guide-desc">Hit "📋 Teams digest" on This Week to copy a formatted weekly summary — paste it straight into your Teams channel.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">📊</div><div class="guide-content"><div class="guide-label">Log grades</div><div class="guide-desc">Enter scores as they come back. The running average in All Projects helps you track where the team stands through the quarter.</div></div></div>
+    <div class="guide-row"><div class="guide-icon">🚨</div><div class="guide-content"><div class="guide-label">Flag blockers early</div><div class="guide-desc">Don't wait until the night before to say you're stuck. The blocked flag alerts the team in real time so someone can help.</div></div></div>
+  </div>
+
+  </div>`;
+}
+
+// Wait for DOM + Firebase SDK to be ready
+function safeboot(){
+  if(typeof firebase==='undefined'){
+    document.body.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px;font-family:sans-serif;background:#0c0e18;color:#eaecf8;"><div style="font-size:32px;">⚠️</div><div style="font-size:16px;font-weight:600;">Firebase failed to load</div><div style="font-size:13px;color:#9499b8;text-align:center;max-width:320px;">Check your internet connection and try refreshing. The tracker needs access to gstatic.com to load Firebase.</div><button onclick="location.reload()" style="margin-top:8px;background:#6366f1;border:none;border-radius:8px;padding:10px 20px;color:#fff;font-size:13px;cursor:pointer;">Refresh</button></div>';
+    return;
+  }
+  boot();
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',safeboot);
+}else{
+  safeboot();
+}
+</script>
+</body>
+</html>
