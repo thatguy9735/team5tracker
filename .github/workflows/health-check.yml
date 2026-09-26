@@ -1,0 +1,63 @@
+name: Tracker health check
+
+on:
+  schedule:
+    - cron: "17 15 * * *"          # daily, 8:17 AM Pacific (7:17 during winter)
+  push:
+    branches: [main]
+    paths: [index.html]            # after each deploy, wait for Pages and confirm the new build is live
+  workflow_dispatch: {}            # "Run workflow" button for a manual check
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: health-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Run checks
+        id: check
+        continue-on-error: true
+        env:
+          WAIT_FOR_DEPLOY: ${{ github.event_name == 'push' && '1' || '0' }}
+        run: bash .github/health-check.sh
+
+      - name: Open, update, or close the alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OUTCOME: ${{ steps.check.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create health-check --color B60205 --description "Automated tracker health check" --force >/dev/null
+          open=$(gh issue list --label health-check --state open --json number --jq '.[0].number // empty')
+          when="$(TZ=America/Los_Angeles date '+%a %b %-d, %-I:%M %p PT')"
+          if [ "$OUTCOME" = "failure" ]; then
+            {
+              echo "@${{ github.repository_owner }} the tracker health check failed ($when)."
+              echo
+              cat health-report.md
+              echo
+              echo "Run: $RUN_URL"
+              echo
+              echo "Common causes: Firebase rules changed or expired (Realtime Database > Rules), a GitHub Pages deploy stuck (Actions tab), or the site is down."
+            } > body.md
+            if [ -n "$open" ]; then
+              # Re-alert on every failing run so one old open issue never silences a new problem.
+              gh issue comment "$open" --body-file body.md
+            else
+              gh issue create --title "Tracker health check failing" --label health-check --body-file body.md
+            fi
+            exit 1
+          elif [ -n "$open" ]; then
+            { echo "Recovered ($when). All checks pass."; echo; cat health-report.md; } > body.md
+            gh issue comment "$open" --body-file body.md
+            gh issue close "$open"
+          fi

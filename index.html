@@ -75,6 +75,9 @@ button.st-chip{cursor:pointer;}button.st-chip:hover{border-color:var(--b2);color
 .lock-bar code{font-family:'DM Mono',monospace;font-size:12px;background:var(--s2);padding:1px 5px;border-radius:4px;}
 .sechd .note,.ug-label .note{font-size:12px;font-weight:400;color:var(--t3);}
 .tag.edited{border-style:dashed;}
+.live-ic{background:color-mix(in srgb,var(--cc) 18%,transparent);}
+.chip.live{background:color-mix(in srgb,var(--cc) 15%,transparent);color:var(--cc);}
+.mrow.live-past{opacity:.72;}
 
 /* Banners */
 .banner{margin-top:10px;border-radius:var(--r);padding:10px 14px;display:flex;align-items:flex-start;gap:10px;}
@@ -345,10 +348,10 @@ textarea.inp{width:100%;min-height:60px;resize:vertical;}
     <div class="modal-t">Settings</div>
     <div class="modal-s">These sync to the whole team.</div>
     <div class="sg"><div class="sg-t">Default meeting times</div>
-      <div class="sg-r"><span class="sg-l">Team time zone</span><select id="set-tz" class="inp"><option value="America/Denver">Mountain (MT)</option><option value="America/Los_Angeles">Pacific (PT)</option></select></div>
+      <div class="sg-r"><span class="sg-l">Team time zone</span><select id="set-tz" class="inp"><option value="America/Los_Angeles">Pacific (PT)</option><option value="America/Denver">Mountain (MT)</option><option value="America/Chicago">Central (CT)</option><option value="America/New_York">Eastern (ET)</option></select></div>
       <div class="sg-r"><span class="sg-l">Wednesday sync</span><input type="time" id="set-wed" class="inp"/><select id="set-wed-d" class="inp"><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hr</option><option value="90">1.5 hr</option></select></div>
       <div class="sg-r"><span class="sg-l">Saturday session</span><input type="time" id="set-sat" class="inp"/><select id="set-sat-d" class="inp"><option value="30">30 min</option><option value="60">1 hr</option><option value="90">1.5 hr</option><option value="120">2 hr</option></select></div>
-      <div class="hint">Defaults apply to every week. To move or cancel a single meeting, use Edit on that meeting in This Week.</div>
+      <div class="hint">Times are entered in this zone. Meetings then show in PT, CT, and ET for everyone. Defaults apply to every week; to move or cancel one meeting, use Edit on it in This Week.</div>
     </div>
     <div class="sg"><div class="sg-t">Teams meeting link</div>
       <input type="url" id="set-link" class="inp" style="width:100%;" placeholder="https://teams.microsoft.com/l/meetup-join/..."/>
@@ -522,16 +525,16 @@ const FBCFG={
 const P='t5q4';                       // Autumn 2026 data lives here; spring data stays under t5/
 const SITE='https://thatguy9735.github.io/team5tracker/';
 const DUE_TZ='America/Los_Angeles';   // Canvas deadlines: 11:59 PM Pacific
-const TZL={'America/Denver':'MT','America/Los_Angeles':'PT'};
+const TZL={'America/Los_Angeles':'PT','America/Denver':'MT','America/Chicago':'CT','America/New_York':'ET'};
 const VIEWER_TZ=Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 const MEM=[
-  {name:'Audrey Lu',init:'AL',bg:'#4338ca',cl:'#c7d2fe'},
-  {name:'Amadeusz', init:'AM',bg:'#0f766e',cl:'#99f6e4'},
-  {name:'Taiwo',    init:'TW',bg:'#b45309',cl:'#fde68a'},
-  {name:'Samantha', init:'SA',bg:'#be185d',cl:'#fbcfe8'},
-  {name:'Andrew',   init:'AN',bg:'#0369a1',cl:'#bae6fd'},
-  {name:'Tyler',    init:'TY',bg:'#5b21b6',cl:'#ddd6fe'},
+  {name:'Audrey Lu',init:'AL',bg:'#4338ca',cl:'#c7d2fe',tz:'America/Los_Angeles'},
+  {name:'Amadeusz', init:'AM',bg:'#0f766e',cl:'#99f6e4',tz:'America/Los_Angeles'},
+  {name:'Taiwo',    init:'TW',bg:'#b45309',cl:'#fde68a',tz:'America/New_York'},
+  {name:'Samantha', init:'SA',bg:'#be185d',cl:'#fbcfe8',tz:'America/Los_Angeles'},
+  {name:'Andrew',   init:'AN',bg:'#0369a1',cl:'#bae6fd',tz:'America/Chicago'},
+  {name:'Tyler',    init:'TY',bg:'#5b21b6',cl:'#ddd6fe',tz:'America/Los_Angeles'},
 ];
 const COURSES={
   'MGMT 502':{s:'Strategy',k:'strat',full:'Business Strategy',core:true},
@@ -593,7 +596,11 @@ function fmt12(hm){if(!hm)return '';const[h,m]=hm.split(':').map(Number);return 
 function fmtDur(n){n=+n;return n<60?`${n} min`:n===60?'1 hr':`${n/60} hr`;}
 function fmtTs(ts){if(!ts)return '';const d=Date.now()-ts;if(d<6e4)return 'just now';if(d<36e5)return `${Math.floor(d/6e4)}m ago`;if(d<864e5)return `${Math.floor(d/36e5)}h ago`;return new Date(ts).toLocaleDateString('en-US',{month:'short',day:'numeric'});}
 function fmtAge(ts){const d=Date.now()-(ts||Date.now());if(d<36e5)return `${Math.max(1,Math.floor(d/6e4))}m`;if(d<864e5)return `${Math.floor(d/36e5)}h`;return `${Math.floor(d/864e5)}d`;}
-function teamTz(){return fb.settings.tz||'America/Denver';}
+function teamTz(){return fb.settings.tz||'America/Los_Angeles';}
+function tzOffset(tz){const d=new Date();return (zoned(ymdIn(d,tz),'12:00',tz)-zoned(ymdIn(d,'UTC'),'12:00','UTC'))/6e4;}
+function teamZones(){return [...new Set(MEM.map(m=>m.tz))].sort((a,b)=>tzOffset(b)-tzOffset(a));}
+function fmtIn(d,tz){return d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',timeZone:tz});}
+function allZones(d){return teamZones().map(z=>`${fmtIn(d,z)} ${TZL[z]||z}`).join(' / ');}
 
 /* ================= HELPERS ================= */
 const TS=()=>firebase.database.ServerValue.TIMESTAMP;
@@ -608,7 +615,8 @@ function crs(c){return COURSES[c]||COURSES.OTHER;}
 function cBadge(c){const k=crs(c);return `<span class="cb k-${k.k}" title="${esc(c)} ${esc(k.full)}">${esc(k.s)}</span>`;}
 const isTeam=x=>x.t==='team'&&isCore(x.c);          // Team 5 deliverable: one shared checkbox
 const isElecTeam=x=>x.t==='team'&&!isCore(x.c);     // group work in an elective: each person checks their own
-const isKey=x=>x.g==='Y'||x.t==='team';
+const isLive=x=>/foster live/i.test(x.n);                // attendance, shown with meetings
+const isKey=x=>(x.g==='Y'||x.t==='team')&&!isLive(x);
 function enrollOf(name){const e=fb.enroll[uk(name)];return e&&e._set?e:null;}
 function takes(name,c){if(isCore(c))return true;const e=enrollOf(name);return e?!!e[c]:null;}   // null = hasn't said yet
 function iTake(c){return takes(me,c)!==false;}    // until you choose, electives stay visible
@@ -617,7 +625,8 @@ function doneBy(x,name){if(!name)return false;return isTeam(x)?!!fb.state[x.id]?
 function myDone(x){return doneBy(x,me);}
 function mine(x){return iTake(x.c);}
 function courseOk(x){return mine(x)&&(prefs.course==='all'||x.c===prefs.course);}
-function vis(x){return courseOk(x)&&(prefs.readings||isKey(x));}
+function liveFor(w){return ALL.filter(x=>isLive(x)&&x.w===w&&courseOk(x));}
+function vis(x){return courseOk(x)&&!isLive(x)&&(prefs.readings||isKey(x));}
 function needName(){toast('Pick your name first','terr');openPicker();return false;}
 function logAct(action,id){if(!db||!me)return;db.ref(`${P}/log`).push({who:me,action,id:id||'',label:BYID[id]?.n||id||'',ts:TS()});}
 
@@ -751,7 +760,7 @@ function meetingsFor(w){
 }
 function allMeetings(){return WEEKS.flatMap(w=>meetingsFor(w.n));}
 function localNote(m){
-  if(VIEWER_TZ===teamTz())return '';
+  if(teamZones().includes(VIEWER_TZ)||VIEWER_TZ===teamTz())return '';
   const t=m.start.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
   return ` (${t} your time)`;
 }
@@ -781,6 +790,8 @@ function renderStrip(){
   if(me&&dbStatus==='live'&&!enrollOf(me))c.push(`<button class="st-chip" onclick="openElectives()"><span class="dot warn"></span>Choose your electives</button>`);
   if(teamOpen)c.push(`<button class="st-chip" onclick="sw('week')"><span class="dot warn"></span><b>${teamOpen}</b> team item${teamOpen>1?'s':''} open</button>`);
   if(nx){const w=meetWhen(nx);c.push(`<button class="st-chip" onclick="goWk(${nx.w})">📅 ${esc(nx.label)} <b>${w==='now'?'now':w}</b></button>`);}
+  const nl=ALL.filter(x=>isLive(x)&&mine(x)&&dayDiff(x.due)>=0&&dayDiff(x.due)<=7)[0];
+  if(nl){const d=dayDiff(nl.due);c.push(`<button class="st-chip k-${crs(nl.c).k}" onclick="goWk(${nl.w})"><span class="dot" style="background:var(--cc)"></span>🎓 ${esc(crs(nl.c).s)} Foster Live <b>${d===0?'today':d===1?'tomorrow':fmtDay(nl.due,{weekday:'short'})}</b></button>`);}
   c.push('<span class="st-spacer"></span>');
   c.push(`<span class="st-chip" title="Online now">${on.length?on.map(n=>mAv(n)).join(''):''}${on.length?`${on.length} online`:'Nobody else online'}</span>`);
   document.getElementById('strip').innerHTML=c.join('');
@@ -793,10 +804,21 @@ function meetRow(m){
     <div class="micon">${m.icon||'⭐'}</div>
     <div class="minfo">
       <div class="mname">${esc(m.label)}${live?'<span class="pill pill-now">Now</span>':soon?'<span class="pill pill-soon">Soon</span>':''}</div>
-      <div class="mtime">${m.cancelled?'Cancelled this week':`${fmtDay(m.date)}, ${fmt12(m.time)} ${TZL[teamTz()]||''}${esc(localNote(m))}, ${fmtDur(m.dur)}`}</div>
+      <div class="mtime">${m.cancelled?'Cancelled this week':`${fmtDay(m.date)}, ${fmtDur(m.dur)}<br>${allZones(m.start)}${esc(localNote(m))}`}</div>
     </div>
     ${link&&!m.cancelled?`<a class="join" href="${esc(link)}" target="_blank" rel="noopener">Join</a>`:''}
     <button class="nbtn" onclick="openMeet(${m.w},'${m.key}')">Edit</button>
+  </div>`;
+}
+function liveRow(x){
+  const d=dayDiff(x.due),att=myDone(x),k=crs(x.c);
+  return `<div class="mrow${d<0?' live-past':''}">
+    <div class="micon live-ic k-${k.k}">🎓</div>
+    <div class="minfo">
+      <div class="mname">${esc(k.s)} Foster Live${d===0?'<span class="pill pill-now">Today</span>':d===1?'<span class="pill pill-soon">Tomorrow</span>':''}${x.edited?'<span class="tag edited" style="margin-left:6px;">Edited</span>':''}</div>
+      <div class="mtime">${fmtDay(x.due)}. Session time is on Canvas.</div>
+    </div>
+    ${d<=0?`<button class="nbtn${att?' good':''}" onclick="tog('${x.id}')" title="Only for your own record. Not counted in progress.">${att?'✓ Attended':'Attended?'}</button>`:''}
   </div>`;
 }
 function openMeet(w,key){
@@ -876,7 +898,7 @@ function renderBanners(){
   lk.innerHTML=dbStatus==='locked'?`<div class="banner lock-bar"><div style="font-size:17px;">🔒</div><div class="banner-t"><b style="color:var(--red);">The team database is refusing access, so nothing is loading or saving.</b><div class="banner-meta" style="font-size:13px;color:var(--t2);">This is a Firebase rules problem, not your connection. Tyler needs to update the rules in the Firebase console (Realtime Database, Rules tab). The assignment list below still works; checkmarks will not save until it is fixed.</div></div></div>`
     :dbStatus==='nosdk'?`<div class="banner lock-bar"><div style="font-size:17px;">⚠️</div><div class="banner-t"><b style="color:var(--red);">This network or browser is blocking the sync service.</b><div class="banner-meta" style="font-size:13px;color:var(--t2);">A work VPN, a strict ad blocker, or an in-app preview can block it. You can still read the assignment list. Open the tracker in a normal browser tab on another network to sync.</div></div></div>`:'';
   const due=ALL.filter(x=>isKey(x)&&mine(x)&&dayDiff(x.due)===0&&!myDone(x));
-  document.getElementById('due-banner').innerHTML=due.length?`<div class="banner due-bar"><div style="font-size:17px;">🔥</div><div class="banner-t"><b style="color:var(--red);">Due today by 11:59 PM PT</b><div class="banner-meta" style="font-size:13px;color:var(--t2);">${due.map(x=>`${esc(crs(x.c).s)}: ${esc(x.n)}`).join('<br>')}</div></div></div>`:'';
+  document.getElementById('due-banner').innerHTML=due.length?`<div class="banner due-bar"><div style="font-size:17px;">🔥</div><div class="banner-t"><b style="color:var(--red);">Due today by 11:59 PM PT${VIEWER_TZ!==DUE_TZ&&TZL[VIEWER_TZ]?` (${fmtIn(zoned(todayStr(),'23:59',DUE_TZ),VIEWER_TZ)} ${TZL[VIEWER_TZ]} for you)`:''}</b><div class="banner-meta" style="font-size:13px;color:var(--t2);">${due.map(x=>`${esc(crs(x.c).s)}: ${esc(x.n)}`).join('<br>')}</div></div></div>`:'';
   const a=fb.announce;
   document.getElementById('ann-banner').innerHTML=a&&a.text
     ?`<div class="banner announce-bar"><div style="font-size:17px;">📌</div><div class="banner-t">${esc(a.text).replace(/\n/g,'<br>')}<div class="banner-meta">${esc(a.by||'')}${a.ts?', '+fmtTs(a.ts):''}</div></div><button class="link-btn" onclick="openAnnouncement()">Edit</button></div>`
@@ -905,6 +927,7 @@ function renderLegend(){
     ${I('<span class="ppl">'+mAv('Audrey Lu')+mAv('Andrew')+'<span class="pplc">2/6</span></span>','Teammates who finished it')}
     ${I('<span style="display:inline-block;width:4px;height:20px;background:var(--red);border-radius:2px;"></span>','Someone is stuck, click ⋯ to help')}
     ${I('<span class="due today">Due in 3h</span>','Deadlines are 11:59 PM Pacific')}
+    ${I('🎓','Foster Live session, listed with meetings')}
     ${I('<span class="tag edited">Edited</span>','Date or name changed by a teammate')}
     ${I('<span class="more on">⋯</span>','Comments, doc link, note, grade, edit')}
   </div>`;
@@ -1031,7 +1054,7 @@ function rWeek(){
     const own=wkKey.filter(x=>fb.state[x.id]?.owner===mm.name&&!fb.state[x.id]?.done).length;
     const stuck=ALL.some(x=>x.w===w&&fb.blocked[x.id]?.by===mm.name);
     const bits=[];if(n)bits.push(`${n} done`);if(own)bits.push(`owns ${own}`);if(stuck)bits.push('stuck');
-    return `<div class="tg-cell${stuck?' blocked':''}">${av(mm,30)}${onl.has(mm.name)?'<span class="odot" title="Online"></span>':''}<div><div class="tg-name">${esc(first(mm.name))}${mm.name===m.name?' <span class="badge">Lead</span>':''}</div><div class="tg-stat">${bits.join(', ')||'nothing checked yet'}</div></div></div>`;
+    return `<div class="tg-cell${stuck?' blocked':''}">${av(mm,30)}${onl.has(mm.name)?'<span class="odot" title="Online"></span>':''}<div style="min-width:0;"><div class="tg-name">${esc(first(mm.name))}${mm.name===m.name?' <span class="badge">Lead</span>':''} <span class="meta-mini" title="Local time for ${esc(first(mm.name))}">${fmtIn(new Date(),mm.tz)} ${TZL[mm.tz]}</span></div><div class="tg-stat">${bits.join(', ')||'nothing checked yet'}</div></div></div>`;
   }).join('');
   const meets=meetingsFor(w);
   return `<div class="wnav-row">
@@ -1048,8 +1071,8 @@ function rWeek(){
           ${ln?.text?`<div class="ln-content" style="margin-top:4px;">${esc(ln.text)}</div><div class="ln-meta">${esc(ln.by||'')}, ${fmtTs(ln.ts)}</div>`:`<div class="ln-meta">${isLeader?'Add an agenda or who is taking what.':'No notes yet.'}</div>`}
         </div>
       </div></div>
-      <div class="sec"><div class="sechd"><span>Meetings <span class="note">times in ${TZL[teamTz()]}</span></span><div class="acts"><button class="nbtn" onclick="openMeet(${w})">+ Add</button></div></div>
-        <div class="card">${meets.map(meetRow).join('')}</div>
+      <div class="sec"><div class="sechd"><span>Meetings</span><div class="acts"><button class="nbtn" onclick="openMeet(${w})">+ Add</button></div></div>
+        <div class="card">${meets.map(meetRow).join('')}${liveFor(w).map(liveRow).join('')}</div>
         ${fb.settings.meetLink?'':`<div class="hint">Add the Teams link in Settings to get Join buttons.</div>`}
       </div>
       <div class="sec"><div class="sechd"><span>Team this week <span class="note">core courses</span></span></div><div class="team-grid">${grid}</div></div>
@@ -1098,11 +1121,11 @@ function rSched(){
       <div class="wn">W${pad(w)}</div>${av(m,30)}
       <div class="sbody"><div class="sldr">${esc(m.name)}${w===detectWeek()?' <span class="badge">This week</span>':''}</div>
         <div class="srng">${rangeLbl(w)}. ${key.length} graded items${team?`, ${team} team`:''}.</div>
-        <div class="schips">${meetingsFor(w).map(mt=>`<span class="chip${mt.cancelled?' x':''}">${esc(mt.label.split(' ')[0])} ${fmtDay(mt.date,{weekday:'short',month:'short',day:'numeric'})}, ${fmt12(mt.time)}</span>`).join('')}</div>
+        <div class="schips">${meetingsFor(w).map(mt=>`<span class="chip${mt.cancelled?' x':''}">${esc(mt.label.split(' ')[0])} ${fmtDay(mt.date,{weekday:'short',month:'short',day:'numeric'})}, ${fmt12(mt.time)}</span>`).join('')}${liveFor(w).map(x=>`<span class="chip live k-${crs(x.c).k}">🎓 ${esc(crs(x.c).s)} Live ${fmtDay(x.due,{weekday:'short',month:'short',day:'numeric'})}</span>`).join('')}</div>
         <div class="prog-sm"><div class="pf${p===100?' full':''}" style="width:${p}%;height:100%;"></div></div>
       </div></div>`;
   }).join('');
-  return `<div class="sec"><div class="sechd"><span>Autumn 2026, ten weeks. Meeting times in ${TZL[teamTz()]}.</span><div class="acts"><button class="nbtn" onclick="exportICS()">📅 Add to my calendar (.ics)</button></div></div><div class="card">${rows}</div></div>`;
+  return `<div class="sec"><div class="sechd"><span>Autumn 2026, ten weeks. Meeting times in ${TZL[teamTz()]}; This Week shows every time zone.</span><div class="acts"><button class="nbtn" onclick="exportICS()">📅 Add to my calendar (.ics)</button></div></div><div class="card">${rows}</div></div>`;
 }
 
 function rAll(){
@@ -1160,7 +1183,9 @@ function rGuide(){
     ${R('🎨','Color by course','Each course has a color. Use the chips above the tabs to show one course at a time.')}
     ${R('☑️','Your own checkboxes','Individual work (problem sets, discussions, readings) now has a checkbox per person, so checking off your problem set no longer checks it for everyone. Only Team 5 deliverables in Strategy and Macro share one checkbox. Group work in an elective is with a different team, so everyone checks their own. The avatars on each row show who has finished.')}
     ${R('📚','Readings are hidden by default','There are about 100 readings and videos. Turn on “Show readings and videos” to see them.')}
-    ${R('📅','Meetings you can move','Edit any single meeting to change its date or time, cancel it for one week, or add an extra session. Times show in the team time zone plus your local time if you are somewhere else.')}
+    ${R('🎓','Foster Live is a session, not homework','Live sessions are listed with meetings on This Week and in Schedule, not as overdue work. After a session you can mark it attended for your own record.')}
+    ${R('📅','Meetings you can move','Edit any single meeting to change its date or time, cancel it for one week, or add an extra session.')}
+    ${R('🌎','Three time zones','Team 5 spans Pacific (Tyler, Amadeusz, Samantha, Audrey), Central (Andrew), and Eastern (Taiwo). Every meeting shows all three, the Teams update does too, and “Team this week” shows each person’s local time.')}
     ${R('➕','Add assignments','Anything missing, like MGMT 560 or Marketing Analytics work, can be added with “+ Add assignment”.')}
     ${R('📆','Calendar export','Schedule tab: download every graded deadline and meeting as a calendar file.')}
   </div>
@@ -1337,7 +1362,8 @@ function copyDigest(w){
   const st=ALL.filter(x=>x.w===w&&fb.blocked[x.id]);
   if(st.length){L.push('','Stuck:');st.forEach(x=>L.push(`  🚨 ${x.n}: ${fb.blocked[x.id].by}`));}
   L.push('','Meetings:');
-  meetingsFor(w).forEach(mt=>L.push(`  ${mt.cancelled?'(cancelled) ':''}${mt.label}: ${fmtDay(mt.date)}, ${fmt12(mt.time)} ${TZL[teamTz()]}`));
+  meetingsFor(w).forEach(mt=>L.push(`  ${mt.cancelled?'(cancelled) ':''}${mt.label}: ${fmtDay(mt.date)}, ${allZones(mt.start)}`));
+  ALL.filter(x=>isLive(x)&&x.w===w&&isCore(x.c)).forEach(x=>L.push(`  Foster Live (${crs(x.c).s}): ${fmtDay(x.due)}, time on Canvas`));
   if(fb.settings.meetLink)L.push(`  Join: ${fb.settings.meetLink}`);
   L.push('',`Tracker: ${SITE}`);
   navigator.clipboard.writeText(L.join('\n')).then(()=>toast('Copied. Paste it into the Teams chat.','tok')).catch(()=>toast('Copy was blocked by the browser','terr'));
@@ -1350,6 +1376,7 @@ function fold(l){const o=[];while(l.length>74){o.push(l.slice(0,74));l=' '+l.sli
 function exportICS(){
   const stamp=icsUtc(new Date()),L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Team5//Tracker//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Team 5 Autumn 2026'];
   ALL.filter(x=>isKey(x)&&mine(x)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`${crs(x.c).s}: ${x.n}${isTeam(x)?' (Team)':''}`)}`,`DESCRIPTION:${icsEsc(`${x.c}. Due 11:59 PM PT. ${SITE}`)}`,'TRANSP:TRANSPARENT','END:VEVENT'));
+  ALL.filter(x=>isLive(x)&&mine(x)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`Foster Live: ${crs(x.c).s}`)}`,`DESCRIPTION:${icsEsc('Session time is on Canvas.')}`,'END:VEVENT'));
   allMeetings().filter(m=>!m.cancelled).forEach(m=>L.push('BEGIN:VEVENT',`UID:w${m.w}-${m.key}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART:${icsUtc(m.start)}`,`DTEND:${icsUtc(m.end)}`,`SUMMARY:${icsEsc('Team 5: '+m.label)}`,...(fb.settings.meetLink?[`LOCATION:${icsEsc('Microsoft Teams')}`,`DESCRIPTION:${icsEsc('Join: '+fb.settings.meetLink)}`]:[]),'END:VEVENT'));
   L.push('END:VCALENDAR');
   const blob=new Blob([L.map(fold).join('\r\n')],{type:'text/calendar'});
