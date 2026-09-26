@@ -431,6 +431,20 @@ textarea.inp{width:100%;min-height:60px;resize:vertical;}
   </div>
 </div>
 
+<!-- Electives -->
+<div class="overlay" id="elec-modal">
+  <div class="modal">
+    <div class="modal-t">Which electives are you taking?</div>
+    <div class="modal-s">Team 5 shares Strategy and Macro. Electives are individual, so you only see the ones you pick, and “done” counts only include classmates in the same elective.</div>
+    <div class="sg" id="elec-list"></div>
+    <div class="hint" id="elec-who"></div>
+    <div class="macts">
+      <button class="btn bacc" onclick="saveElectives()">Save my electives</button>
+      <button class="btn bghost" onclick="closeModal('elec-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <!-- Custom assignment -->
 <div class="overlay" id="cust-modal">
   <div class="modal">
@@ -440,9 +454,9 @@ textarea.inp{width:100%;min-height:60px;resize:vertical;}
       <div class="sg-r"><span class="sg-l">Course</span><select class="inp" id="cust-c"></select></div>
       <div class="sg-r"><span class="sg-l">Name</span><input class="inp" id="cust-n" style="flex:2;" placeholder="Submit: Client scoping memo"/></div>
       <div class="sg-r"><span class="sg-l">Due date</span><input type="date" class="inp" id="cust-due"/></div>
-      <div class="sg-r"><span class="sg-l">Type</span><select class="inp" id="cust-t"><option value="team">Team deliverable</option><option value="ind">Individual, graded</option><option value="read">Reading or video</option></select></div>
+      <div class="sg-r"><span class="sg-l">Type</span><select class="inp" id="cust-t"><option value="team">Team deliverable (Team 5 in core courses, your elective group otherwise)</option><option value="ind">Individual, graded</option><option value="read">Reading or video</option></select></div>
     </div>
-    <div class="hint">Team deliverables have one shared checkbox. Everything else is checked off by each person.</div>
+    <div class="hint">Only Strategy and Macro team work gets one shared Team 5 checkbox. Elective group work is checked off by each person.</div>
     <div class="macts">
       <button class="btn bacc" onclick="saveCustom()">Add assignment</button>
       <button class="btn bghost" onclick="closeModal('cust-modal')">Cancel</button>
@@ -520,13 +534,15 @@ const MEM=[
   {name:'Tyler',    init:'TY',bg:'#5b21b6',cl:'#ddd6fe'},
 ];
 const COURSES={
-  'MGMT 502':{s:'Strategy',k:'strat',full:'Business Strategy'},
-  'ECON 501':{s:'Macro',k:'macro',full:'Analysis of Global Economic Conditions'},
+  'MGMT 502':{s:'Strategy',k:'strat',full:'Business Strategy',core:true},
+  'ECON 501':{s:'Macro',k:'macro',full:'Analysis of Global Economic Conditions',core:true},
   'FIN 558': {s:'M&A',k:'ma',full:'Mergers & Acquisitions'},
   'MGMT 560':{s:'Consulting',k:'cons',full:'Small Business Consulting'},
   'MKTG':    {s:'Mktg Analytics',k:'mktg',full:'Marketing Analytics'},
-  'OTHER':   {s:'Other',k:'other',full:'Other'},
+  'OTHER':   {s:'Other',k:'other',full:'Other',core:true},
 };
+const ELECTIVES=Object.keys(COURSES).filter(c=>!COURSES[c].core);
+const isCore=c=>!!(COURSES[c]||COURSES.OTHER).core;
 const WEEKS=[
   {n:1, s:'2026-09-21',e:'2026-09-27'},
   {n:2, s:'2026-09-28',e:'2026-10-04'},
@@ -546,7 +562,7 @@ const ITEMS=[{"id":"str1_01","c":"MGMT 502","m":1,"n":"Bullseye Model Video","g"
 let db=null,me='',tab='upcoming',curW=1,searchQ='';
 let prefs={course:'all',readings:false,theme:null,mine:'todo',legend:false};
 const fb={state:{},personal:{},comments:{},links:{},blocked:{},grades:{},ratings:{},polls:{},
-  settings:{},announce:{},leadernotes:{},meetings:{},custom:{},overrides:{},presence:{},log:[]};
+  settings:{},announce:{},leadernotes:{},meetings:{},custom:{},overrides:{},enroll:{},presence:{},log:[]};
 let dbStatus='loading',dbErrPath='';   // loading | live | offline | locked | nosdk
 const loaded={state:false,personal:false};
 let ALL=[],BYID={},HIDDEN=[];
@@ -590,11 +606,17 @@ function mAv(n){const m=memOf(n);return m?`<span class="mav" title="${esc(n)}" s
 function lead(w){const st=+(fb.settings.leaderStart??4);return MEM[((w-1)+st)%MEM.length];}
 function crs(c){return COURSES[c]||COURSES.OTHER;}
 function cBadge(c){const k=crs(c);return `<span class="cb k-${k.k}" title="${esc(c)} ${esc(k.full)}">${esc(k.s)}</span>`;}
-const isTeam=x=>x.t==='team';
-const isKey=x=>x.g==='Y'||isTeam(x);
+const isTeam=x=>x.t==='team'&&isCore(x.c);          // Team 5 deliverable: one shared checkbox
+const isElecTeam=x=>x.t==='team'&&!isCore(x.c);     // group work in an elective: each person checks their own
+const isKey=x=>x.g==='Y'||x.t==='team';
+function enrollOf(name){const e=fb.enroll[uk(name)];return e&&e._set?e:null;}
+function takes(name,c){if(isCore(c))return true;const e=enrollOf(name);return e?!!e[c]:null;}   // null = hasn't said yet
+function iTake(c){return takes(me,c)!==false;}    // until you choose, electives stay visible
+function roster(c){return MEM.filter(m=>takes(m.name,c)===true);}
 function doneBy(x,name){if(!name)return false;return isTeam(x)?!!fb.state[x.id]?.done:!!fb.personal[x.id]?.[uk(name)];}
 function myDone(x){return doneBy(x,me);}
-function courseOk(x){return prefs.course==='all'||x.c===prefs.course;}
+function mine(x){return iTake(x.c);}
+function courseOk(x){return mine(x)&&(prefs.course==='all'||x.c===prefs.course);}
 function vis(x){return courseOk(x)&&(prefs.readings||isKey(x));}
 function needName(){toast('Pick your name first','terr');openPicker();return false;}
 function logAct(action,id){if(!db||!me)return;db.ref(`${P}/log`).push({who:me,action,id:id||'',label:BYID[id]?.n||id||'',ts:TS()});}
@@ -672,6 +694,7 @@ function setupListeners(){
   L('meetings',v=>{fb.meetings=v;updateMeetChip();renderAll();});
   L('custom',v=>{fb.custom=v;rebuildItems();renderAll();});
   L('overrides',v=>{fb.overrides=v;rebuildItems();renderAll();});
+  L('enroll',v=>{fb.enroll=v;renderAll();});
   db.ref(`${P}/log`).limitToLast(120).on('value',s=>{
     fb.log=Object.values(s.val()||{}).sort((a,b)=>(b.ts||0)-(a.ts||0));
     updateBadge();if(tab==='log')renderAll();
@@ -693,7 +716,7 @@ function onlineNames(){return new Set(Object.values(fb.presence).filter(p=>p&&p.
 function renderPresence(){renderAll();}
 
 /* ================= CELEBRATION ================= */
-function weekComplete(w){const k=ALL.filter(x=>x.w===w&&isKey(x));return k.length>0&&k.every(myDone);}
+function weekComplete(w){const k=ALL.filter(x=>x.w===w&&isKey(x)&&mine(x));return k.length>0&&k.every(myDone);}
 function snapshot(){const s={};WEEKS.forEach(w=>s[w.n]=weekComplete(w.n));return s;}
 function checkCelebration(){
   if(!loaded.state||!loaded.personal||!me)return;
@@ -742,7 +765,7 @@ function meetWhen(m){
 function updateMeetChip(){renderAll();}
 function renderStrip(){
   const t=todayStr(),cw=detectWeek();
-  const pend=ALL.filter(x=>isKey(x)&&!myDone(x));
+  const pend=ALL.filter(x=>isKey(x)&&mine(x)&&!myDone(x));
   const over=pend.filter(x=>x.due<t).length,soon=pend.filter(x=>{const d=dayDiff(x.due);return d>=0&&d<=7;}).length;
   const teamOpen=ALL.filter(x=>isTeam(x)&&!fb.state[x.id]?.done&&dayDiff(x.due)<=7).length;
   const nx=allMeetings().filter(m=>!m.cancelled&&m.end>Date.now())[0];
@@ -755,6 +778,7 @@ function renderStrip(){
     if(over)c.push(`<button class="st-chip" onclick="sw('upcoming')"><span class="dot bad"></span><b>${over}</b> overdue</button>`);
     c.push(`<button class="st-chip" onclick="sw('upcoming')"><span class="dot ${soon?'warn':'good'}"></span><b>${soon}</b> due in 7 days</button>`);
   }
+  if(me&&dbStatus==='live'&&!enrollOf(me))c.push(`<button class="st-chip" onclick="openElectives()"><span class="dot warn"></span>Choose your electives</button>`);
   if(teamOpen)c.push(`<button class="st-chip" onclick="sw('week')"><span class="dot warn"></span><b>${teamOpen}</b> team item${teamOpen>1?'s':''} open</button>`);
   if(nx){const w=meetWhen(nx);c.push(`<button class="st-chip" onclick="goWk(${nx.w})">📅 ${esc(nx.label)} <b>${w==='now'?'now':w}</b></button>`);}
   c.push('<span class="st-spacer"></span>');
@@ -851,7 +875,7 @@ function renderBanners(){
   const lk=document.getElementById('lock-banner');
   lk.innerHTML=dbStatus==='locked'?`<div class="banner lock-bar"><div style="font-size:17px;">🔒</div><div class="banner-t"><b style="color:var(--red);">The team database is refusing access, so nothing is loading or saving.</b><div class="banner-meta" style="font-size:13px;color:var(--t2);">This is a Firebase rules problem, not your connection. Tyler needs to update the rules in the Firebase console (Realtime Database, Rules tab). The assignment list below still works; checkmarks will not save until it is fixed.</div></div></div>`
     :dbStatus==='nosdk'?`<div class="banner lock-bar"><div style="font-size:17px;">⚠️</div><div class="banner-t"><b style="color:var(--red);">This network or browser is blocking the sync service.</b><div class="banner-meta" style="font-size:13px;color:var(--t2);">A work VPN, a strict ad blocker, or an in-app preview can block it. You can still read the assignment list. Open the tracker in a normal browser tab on another network to sync.</div></div></div>`:'';
-  const due=ALL.filter(x=>isKey(x)&&dayDiff(x.due)===0&&!myDone(x));
+  const due=ALL.filter(x=>isKey(x)&&mine(x)&&dayDiff(x.due)===0&&!myDone(x));
   document.getElementById('due-banner').innerHTML=due.length?`<div class="banner due-bar"><div style="font-size:17px;">🔥</div><div class="banner-t"><b style="color:var(--red);">Due today by 11:59 PM PT</b><div class="banner-meta" style="font-size:13px;color:var(--t2);">${due.map(x=>`${esc(crs(x.c).s)}: ${esc(x.n)}`).join('<br>')}</div></div></div>`:'';
   const a=fb.announce;
   document.getElementById('ann-banner').innerHTML=a&&a.text
@@ -862,10 +886,10 @@ function renderFilterbar(){
   const el=document.getElementById('filterbar');
   if(['log','polls','guide'].includes(tab)&&!searchQ){el.style.display='none';return;}
   el.style.display='';
-  const used=[...new Set(ALL.map(x=>x.c))].sort((a,b)=>Object.keys(COURSES).indexOf(a)-Object.keys(COURSES).indexOf(b));
+  const used=[...new Set(ALL.map(x=>x.c))].filter(iTake).sort((a,b)=>Object.keys(COURSES).indexOf(a)-Object.keys(COURSES).indexOf(b));
   el.innerHTML=`<button class="fchip${prefs.course==='all'?' on':''}" onclick="setCourse('all')">All courses</button>`+
     used.map(c=>{const k=crs(c);return `<button class="fchip k-${k.k}${prefs.course===c?' on':''}" onclick="setCourse('${esc(c)}')"><span class="fdot"></span>${esc(k.s)}</button>`;}).join('')+
-    `<button class="fchip" onclick="openCustom()">+ Add assignment</button><button class="fchip${prefs.legend?' on':''}" onclick="prefs.legend=!prefs.legend;savePrefs();renderAll()" aria-expanded="${!!prefs.legend}">Key</button><span class="fsep"></span>`+
+    `<button class="fchip" onclick="openElectives()">My electives</button><button class="fchip" onclick="openCustom()">+ Add assignment</button><button class="fchip${prefs.legend?' on':''}" onclick="prefs.legend=!prefs.legend;savePrefs();renderAll()" aria-expanded="${!!prefs.legend}">Key</button><span class="fsep"></span>`+
     `<label class="toggle" title="R"><input type="checkbox" ${prefs.readings?'checked':''} onchange="setReadings(this.checked)"/> Show readings and videos</label>`;
 }
 function renderLegend(){
@@ -875,7 +899,8 @@ function renderLegend(){
   el.innerHTML=`<div class="legend">
     ${I('<span class="cb k-strat">Strategy</span>','Course, color matches everywhere')}
     ${I('<input type="checkbox" checked disabled style="accent-color:var(--accent)"/>','Your own checkbox on individual work')}
-    ${I('<span class="tag team">Team</span>','One shared checkbox for the whole team')}
+    ${I('<span class="tag team">Team 5</span>','Core course, one shared checkbox for all six')}
+    ${I('<span class="tag">Elective team</span>','Your elective group, your own checkbox')}
     ${I('<span class="tag graded">Graded</span>','Counts toward your progress')}
     ${I('<span class="ppl">'+mAv('Audrey Lu')+mAv('Andrew')+'<span class="pplc">2/6</span></span>','Teammates who finished it')}
     ${I('<span style="display:inline-block;width:4px;height:20px;background:var(--red);border-radius:2px;"></span>','Someone is stuck, click ⋯ to help')}
@@ -884,7 +909,7 @@ function renderLegend(){
     ${I('<span class="more on">⋯</span>','Comments, doc link, note, grade, edit')}
   </div>`;
 }
-function setCourse(c){prefs.course=c;savePrefs();renderAll();}
+function setCourse(c){if(c!=='all'&&!iTake(c))c='all';prefs.course=c;savePrefs();renderAll();}
 function setReadings(v){prefs.readings=v;savePrefs();renderAll();}
 
 /* ================= ASSIGNMENT ROW ================= */
@@ -907,15 +932,17 @@ function aRow(x,opt={}){
   const isNew=team&&s.done&&s.doneBy!==me&&(s.doneTs||0)>lastLogSeen;
   const chips=[];
   if(!opt.noCourse)chips.push(cBadge(x.c));
-  if(team)chips.push('<span class="tag team">Team</span>');
+  if(team)chips.push('<span class="tag team">Team 5</span>');
+  else if(isElecTeam(x))chips.push('<span class="tag" title="Group work with your elective team, not Team 5. Each person checks their own.">Elective team</span>');
   else if(x.t==='pair')chips.push('<span class="tag">With a classmate</span>');
-  if(x.g==='Y'&&!team)chips.push('<span class="tag graded">Graded</span>');
+  if(x.g==='Y'&&!team&&!isElecTeam(x))chips.push('<span class="tag graded">Graded</span>');
   if(x.g==='O')chips.push('<span class="tag">Optional</span>');
   if(x.edited)chips.push(`<span class="tag edited" title="Changed by ${esc(x.edited.by||'')}${x.edited.due&&x.orig.due!==x.edited.due?`. Originally due ${fmtDay(x.orig.due)}`:''}">Edited</span>`);
   chips.push(dueChip(x,done));
   if(opt.showWk)chips.push(`<span class="meta-mini">Week ${x.w}</span>`);
   if(team&&s.done)chips.push(`<span class="doneby">${mAv(s.doneBy)} ${esc(first(s.doneBy))}, ${fmtTs(s.doneTs)}</span>`);
-  if(!team){const ppl=MEM.filter(m=>fb.personal[id]?.[uk(m.name)]);if(ppl.length)chips.push(`<span class="ppl" title="Done: ${esc(ppl.map(m=>m.name).join(', '))}">${ppl.map(m=>mAv(m.name)).join('')}<span class="pplc">${ppl.length}/6</span></span>`);}
+  if(!team){const ppl=MEM.filter(m=>fb.personal[id]?.[uk(m.name)]);const ros=isCore(x.c)?MEM.length:roster(x.c).length;
+    if(ppl.length)chips.push(`<span class="ppl" title="Done: ${esc(ppl.map(m=>m.name).join(', '))}">${ppl.map(m=>mAv(m.name)).join('')}<span class="pplc">${ros>=ppl.length&&ros?`${ppl.length}/${ros}`:ppl.length+' done'}</span></span>`);}
   if(team&&!s.done){const st=s.status||'todo';chips.push(`<button class="spill sp-${st}" onclick="cycleStatus('${id}')" title="Click to change">${{todo:'Not started',working:'In progress',review:'Needs review'}[st]}</button>`);}
   if(team&&s.owner)chips.push(`<span class="otag">${mAv(s.owner)}${esc(first(s.owner))} owns</span>`);
   if(link)chips.push(`<a class="link-chip" href="${esc(link.url)}" target="_blank" rel="noopener">🔗 ${esc(link.label||'Doc')}</a>`);
@@ -998,7 +1025,7 @@ function rWeek(){
   const order=Object.keys(COURSES);
   const by={};items.forEach(x=>(by[x.c]=by[x.c]||[]).push(x));
   const onl=onlineNames();
-  const wkKey=ALL.filter(x=>x.w===w&&isKey(x));
+  const wkKey=ALL.filter(x=>x.w===w&&isKey(x)&&isCore(x.c));
   const grid=MEM.map(mm=>{
     const n=wkKey.filter(x=>isTeam(x)?(fb.state[x.id]?.done&&fb.state[x.id]?.doneBy===mm.name):doneBy(x,mm.name)).length;
     const own=wkKey.filter(x=>fb.state[x.id]?.owner===mm.name&&!fb.state[x.id]?.done).length;
@@ -1025,7 +1052,7 @@ function rWeek(){
         <div class="card">${meets.map(meetRow).join('')}</div>
         ${fb.settings.meetLink?'':`<div class="hint">Add the Teams link in Settings to get Join buttons.</div>`}
       </div>
-      <div class="sec"><div class="sechd">Team this week</div><div class="team-grid">${grid}</div></div>
+      <div class="sec"><div class="sechd"><span>Team this week <span class="note">core courses</span></span></div><div class="team-grid">${grid}</div></div>
     </div>
     <div class="wk-main">
       <div class="sec">${statsCards([
@@ -1129,8 +1156,9 @@ function rPolls(){
 function rGuide(){
   const R=(i,l,d)=>`<div class="grow"><div class="gicon">${i}</div><div><div class="glabel">${l}</div><div class="gdesc">${d}</div></div></div>`;
   return `<div class="gsec"><h3>What’s new for Autumn 2026</h3>
-    ${R('🎨','Color by course','Strategy, Macro, and M&A each have a color. Use the chips above the tabs to show one course at a time.')}
-    ${R('☑️','Your own checkboxes','Individual work (problem sets, discussions, readings) now has a checkbox per person, so checking off your problem set no longer checks it for everyone. Team deliverables still share one checkbox. The avatars on each row show who has finished.')}
+    ${R('🎓','Core and electives','Team 5 shares two core courses: Strategy (MGMT 502) and Macro (ECON 501). Everything else is an elective. Click “My electives” once to pick yours, and you only see those.')}
+    ${R('🎨','Color by course','Each course has a color. Use the chips above the tabs to show one course at a time.')}
+    ${R('☑️','Your own checkboxes','Individual work (problem sets, discussions, readings) now has a checkbox per person, so checking off your problem set no longer checks it for everyone. Only Team 5 deliverables in Strategy and Macro share one checkbox. Group work in an elective is with a different team, so everyone checks their own. The avatars on each row show who has finished.')}
     ${R('📚','Readings are hidden by default','There are about 100 readings and videos. Turn on “Show readings and videos” to see them.')}
     ${R('📅','Meetings you can move','Edit any single meeting to change its date or time, cancel it for one week, or add an extra session. Times show in the team time zone plus your local time if you are somewhere else.')}
     ${R('➕','Add assignments','Anything missing, like MGMT 560 or Marketing Analytics work, can be added with “+ Add assignment”.')}
@@ -1261,11 +1289,27 @@ function clearEdit(id){db.ref(`${P}/overrides/${id}`).remove();subOpen[id]=null;
 function hideItem(id){if(!me)return needName();if(!confirm('Remove this from the tracker for everyone? You can restore it from All Work.'))return;db.ref(`${P}/overrides/${id}`).update({hidden:true,by:me,ts:TS()});logAct('removed from the tracker:',id);open[id]=false;}
 function unhideItem(id){db.ref(`${P}/overrides/${id}/hidden`).remove();}
 
+/* Electives */
+function openElectives(){
+  if(!me)return needName();
+  const e=enrollOf(me)||{};
+  document.getElementById('elec-list').innerHTML=ELECTIVES.map(c=>`<label class="sg-r" style="cursor:pointer;"><input type="checkbox" value="${esc(c)}" ${e[c]?'checked':''} style="accent-color:var(--accent);width:17px;height:17px;"/><span class="cb k-${crs(c).k}">${esc(crs(c).s)}</span><span class="sg-l">${esc(c==='MKTG'?'Marketing Analytics':c+' '+crs(c).full)}</span></label>`).join('');
+  const who=ELECTIVES.map(c=>{const r=roster(c);return r.length?`${crs(c).s}: ${r.map(m=>first(m.name)).join(', ')}`:'';}).filter(Boolean);
+  document.getElementById('elec-who').textContent=who.length?'Already signed up. '+who.join('. ')+'.':'';
+  showModal('elec-modal');
+}
+function saveElectives(){
+  const e={_set:true};document.querySelectorAll('#elec-list input:checked').forEach(i=>e[i.value]=true);
+  db.ref(`${P}/enroll/${uk(me)}`).set(e);
+  const n=Object.keys(e).length-1;logAct(n?`is taking ${ELECTIVES.filter(c=>e[c]).map(c=>crs(c).s).join(', ')}`:'is not taking electives this quarter','');
+  closeModal('elec-modal');toast('Electives saved','tok');
+}
+
 /* Custom assignments */
 function openCustom(){
   if(!me)return needName();
   document.getElementById('cust-c').innerHTML=Object.entries(COURSES).map(([c,k])=>`<option value="${esc(c)}">${c==='OTHER'?'Other':esc(c)} ${esc(k.full)}</option>`).join('');
-  document.getElementById('cust-c').value='MGMT 560';
+  document.getElementById('cust-c').value=ELECTIVES.find(c=>takes(me,c)===true&&c!=='FIN 558')||'MGMT 502';
   document.getElementById('cust-n').value='';
   document.getElementById('cust-due').value=WEEKS[curW-1].e>todayStr()?addDays(todayStr(),3):WEEKS[curW-1].e;
   showModal('cust-modal');
@@ -1283,7 +1327,7 @@ function delCustom(cid){if(!confirm('Delete this assignment for everyone?'))retu
 
 /* Digest */
 function copyDigest(w){
-  const m=lead(w),key=ALL.filter(x=>x.w===w&&isKey(x)),ln=fb.leadernotes['w'+w];
+  const m=lead(w),key=ALL.filter(x=>x.w===w&&isKey(x)&&isCore(x.c)),ln=fb.leadernotes['w'+w];
   const L=[`Team 5 | Week ${w} (${rangeLbl(w)})`,`Leader: ${m.name}`];
   if(ln?.text)L.push('',`Leader notes: ${ln.text}`);
   const team=key.filter(isTeam);
@@ -1305,7 +1349,7 @@ function icsUtc(d){return d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
 function fold(l){const o=[];while(l.length>74){o.push(l.slice(0,74));l=' '+l.slice(74);}o.push(l);return o.join('\r\n');}
 function exportICS(){
   const stamp=icsUtc(new Date()),L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Team5//Tracker//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Team 5 Autumn 2026'];
-  ALL.filter(isKey).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`${crs(x.c).s}: ${x.n}${isTeam(x)?' (Team)':''}`)}`,`DESCRIPTION:${icsEsc(`${x.c}. Due 11:59 PM PT. ${SITE}`)}`,'TRANSP:TRANSPARENT','END:VEVENT'));
+  ALL.filter(x=>isKey(x)&&mine(x)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`${crs(x.c).s}: ${x.n}${isTeam(x)?' (Team)':''}`)}`,`DESCRIPTION:${icsEsc(`${x.c}. Due 11:59 PM PT. ${SITE}`)}`,'TRANSP:TRANSPARENT','END:VEVENT'));
   allMeetings().filter(m=>!m.cancelled).forEach(m=>L.push('BEGIN:VEVENT',`UID:w${m.w}-${m.key}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART:${icsUtc(m.start)}`,`DTEND:${icsUtc(m.end)}`,`SUMMARY:${icsEsc('Team 5: '+m.label)}`,...(fb.settings.meetLink?[`LOCATION:${icsEsc('Microsoft Teams')}`,`DESCRIPTION:${icsEsc('Join: '+fb.settings.meetLink)}`]:[]),'END:VEVENT'));
   L.push('END:VCALENDAR');
   const blob=new Blob([L.map(fold).join('\r\n')],{type:'text/calendar'});
