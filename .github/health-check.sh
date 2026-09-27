@@ -34,20 +34,21 @@ j=$(curl -s -o /dev/null -m 20 -w '%{http_code}' https://cdn.jsdelivr.net/npm/fi
 { [ "$g" = 200 ] || [ "$j" = 200 ]; } && pass "Firebase SDK reachable" "gstatic $g, jsdelivr $j" || fail "Firebase SDK reachable" "gstatic $g, jsdelivr $j"
 
 # 3a-f. Database rules behave exactly as intended. ROOM_ID is the team room id (GitHub secret, never printed).
+# The Actions log is public on a public repo: report HTTP status codes only, never response bodies.
 ROOM_ID="${ROOM_ID:-}"
 if [ -z "$ROOM_ID" ]; then
   fail "a. Team room readable" "ROOM_ID secret is not set (Settings > Secrets and variables > Actions)"
   fail "b. Team room writable" "ROOM_ID secret is not set"
 else
   r=$(req GET "$DB/rooms/$ROOM_ID/meta.json")
-  [[ "$r" == 200* ]] && [[ "$r" != "200 null" ]] && pass "a. Team room readable" "room exists" || fail "a. Team room readable" "$(echo "$r" | sed "s/$ROOM_ID/<room>/g")"
+  [[ "$r" == 200* ]] && [[ "$r" != "200 null" ]] && pass "a. Team room readable" "room exists" || fail "a. Team room readable" "HTTP ${r%% *} (room missing or rules changed)"
   p=$(req PUT "$DB/rooms/$ROOM_ID/_healthprobe.json" '"x"'); req DELETE "$DB/rooms/$ROOM_ID/_healthprobe.json" >/dev/null; after=$(req GET "$DB/rooms/$ROOM_ID/_healthprobe.json")
-  [[ "$p" == 200* ]] && [[ "$after" == "200 null" ]] && pass "b. Team room writable" "write, delete, confirm gone" || fail "b. Team room writable" "put=${p:0:40} after=${after:0:40}"
+  [[ "$p" == 200* ]] && [[ "$after" == "200 null" ]] && pass "b. Team room writable" "write, delete, confirm gone" || fail "b. Team room writable" "write HTTP ${p%% *}, read-back HTTP ${after%% *}"
 fi
-r=$(req GET "$DB/rooms.json?shallow=true");   denied "$r" && pass "c. Room list hidden" "denied as expected" || fail "c. Room list hidden" "expected Permission denied, got: ${r:0:60}"
-r=$(req GET "$DB/t5q4/settings.json");        denied "$r" && pass "d. Old unlocked path closed" "denied as expected" || fail "d. Old unlocked path closed" "expected Permission denied, got: ${r:0:60}"
-r=$(req GET "$DB/t5/state.json?shallow=true"); denied "$r" && pass "e. Spring archive closed" "denied as expected" || fail "e. Spring archive closed" "expected Permission denied, got: ${r:0:60}"
-r=$(req GET "$DB/_rootprobe.json");            denied "$r" && pass "f. Everything else closed" "denied as expected" || fail "f. Everything else closed" "expected Permission denied, got: ${r:0:60}"
+r=$(req GET "$DB/rooms.json?shallow=true");   denied "$r" && pass "c. Room list hidden" "denied as expected" || fail "c. Room list hidden" "expected 401, got HTTP ${r%% *}"
+r=$(req GET "$DB/t5q4/settings.json");        denied "$r" && pass "d. Old unlocked path closed" "denied as expected" || fail "d. Old unlocked path closed" "expected 401, got HTTP ${r%% *}"
+r=$(req GET "$DB/t5/state.json?shallow=true"); denied "$r" && pass "e. Spring archive closed" "denied as expected" || fail "e. Spring archive closed" "expected 401, got HTTP ${r%% *}"
+r=$(req GET "$DB/_rootprobe.json");            denied "$r" && pass "f. Everything else closed" "denied as expected" || fail "f. Everything else closed" "expected 401, got HTTP ${r%% *}"
 
 cat "$REPORT"; [ -n "${GITHUB_STEP_SUMMARY:-}" ] && { echo "## Tracker health check"; cat "$REPORT"; } >>"$GITHUB_STEP_SUMMARY"
 cp "$REPORT" health-report.md
