@@ -5,7 +5,7 @@ on:
     - cron: "17 15 * * *"          # daily, 8:17 AM Pacific (7:17 during winter)
   push:
     branches: [main]
-    paths: [index.html]            # after each deploy, wait for Pages and confirm the new build is live
+    paths: [index.html, ".github/**"]   # after each deploy, wait for Pages and confirm the new build is live
   workflow_dispatch: {}            # "Run workflow" button for a manual check
 
 permissions:
@@ -28,6 +28,7 @@ jobs:
         continue-on-error: true
         env:
           WAIT_FOR_DEPLOY: ${{ github.event_name == 'push' && '1' || '0' }}
+          ROOM_ID: ${{ secrets.ROOM_ID }}
         run: bash .github/health-check.sh
 
       - name: Open, update, or close the alert issue
@@ -47,7 +48,7 @@ jobs:
               echo
               echo "Run: $RUN_URL"
               echo
-              echo "Common causes: Firebase rules changed or expired (Realtime Database > Rules), a GitHub Pages deploy stuck (Actions tab), or the site is down."
+              echo "Common causes: Firebase rules changed (Realtime Database > Rules), the ROOM_ID secret is missing or stale after a team code change, a GitHub Pages deploy stuck (Actions tab), or the site is down."
             } > body.md
             if [ -n "$open" ]; then
               # Re-alert on every failing run so one old open issue never silences a new problem.
