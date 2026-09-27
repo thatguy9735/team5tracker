@@ -114,6 +114,7 @@ button.st-chip{cursor:pointer;}button.st-chip:hover{border-color:var(--b2);color
 .tab-badge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;background:var(--red);color:#fff;border-radius:8px;font-size:9px;font-weight:700;margin-left:4px;vertical-align:middle;}
 
 /* Course colors */
+.k-p6{--cc:#c084fc;}.k-p7{--cc:#facc15;}.k-p8{--cc:#4ade80;}[data-theme=light] .k-p6{--cc:#7e22ce;}[data-theme=light] .k-p7{--cc:#a16207;}[data-theme=light] .k-p8{--cc:#15803d;}
 .k-macro{--cc:var(--macro);}.k-ma{--cc:var(--ma);}.k-strat{--cc:var(--strat);}.k-cons{--cc:var(--cons);}.k-mktg{--cc:var(--mktg);}.k-other{--cc:var(--other);}
 .cb{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;color:var(--cc);background:color-mix(in srgb,var(--cc) 15%,transparent);white-space:nowrap;}
 
@@ -342,6 +343,33 @@ textarea.inp{width:100%;min-height:60px;resize:vertical;}
   </div>
 </div>
 
+<!-- Team code gate -->
+<div class="overlay" id="gate">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-t">Enter the Team 5 code</div>
+    <div class="modal-s">The tracker’s data is locked to the team. Ask Tyler for the code. You only enter it once on each device.</div>
+    <input type="password" class="inp" id="gate-code" style="width:100%;" placeholder="Team code" autocomplete="off" onkeydown="if(event.key==='Enter')unlock()"/>
+    <div class="hint" id="gate-msg" style="min-height:18px;"></div>
+    <div class="macts"><button class="btn bacc" onclick="unlock()">Unlock</button></div>
+    <details style="margin-top:16px;font-size:13px;color:var(--t2);"><summary style="cursor:pointer;">Setting up the team for the first time?</summary>
+      <div class="hint">Pick a code of at least 10 characters (a short phrase is easiest to share). If the tracker has existing data, it moves into the locked room and is checked before anything relies on it.</div>
+      <input type="password" class="inp" id="gate-code2" style="width:100%;margin-top:8px;" placeholder="Type the same code again" autocomplete="off"/>
+      <div class="macts"><button class="btn bghost" onclick="createRoom()">Create team room</button></div>
+    </details>
+  </div>
+</div>
+
+<!-- Import a quarter -->
+<div class="overlay" id="imp-modal">
+  <div class="modal" style="max-width:640px;">
+    <div class="modal-t">Load a new quarter</div>
+    <div class="modal-s">Upload the assignment spreadsheet (same layout as Ami’s: one tab per week with Course Code, Course, Module, Assignment, Graded, Due, Team). You’ll see a preview first; nothing changes until you confirm.</div>
+    <input type="file" id="imp-file" accept=".xlsx,.xls,.csv" class="inp" style="width:100%;" onchange="onImpFile(this.files[0])"/>
+    <div id="imp-preview"></div>
+    <div class="macts"><button class="btn bacc" id="imp-go" onclick="createQuarter()" disabled>Make this the team’s quarter</button><button class="btn bghost" onclick="closeModal('imp-modal')">Cancel</button></div>
+  </div>
+</div>
+
 <!-- Settings -->
 <div class="overlay" id="set-modal">
   <div class="modal">
@@ -361,13 +389,28 @@ textarea.inp{width:100%;min-height:60px;resize:vertical;}
       <div class="sg-r"><span class="sg-l">Week 1 leader</span><select id="set-lead" class="inp"></select></div>
       <div class="hint">The rotation continues in the same order from there: Audrey, Amadeusz, Taiwo, Samantha, Andrew, Tyler.</div>
     </div>
+    <div class="sg"><div class="sg-t">Quarter</div>
+      <div class="sg-r"><span class="sg-l">Showing</span><select class="inp" id="set-q" onchange="switchQuarter(this.value)"></select></div>
+      <button class="btn bghost" onclick="openImport()">Load a new quarter from a spreadsheet</button>
+      <div class="hint">Switching changes the quarter for everyone. Past quarters stay saved and can be switched back to.</div>
+    </div>
+    <div class="sg"><div class="sg-t">Backup</div>
+      <div class="macts" style="margin-top:0;"><button class="btn bghost" onclick="exportBackup()">Download a backup</button><button class="btn bghost" onclick="document.getElementById('restore-file').click()">Restore from a backup</button></div>
+      <input type="file" id="restore-file" accept=".json" style="display:none;" onchange="restoreBackup(this.files[0]);this.value=''"/>
+      <div class="hint">Everything for every quarter, as one file. The free database plan has no backups of its own, so download one now and then. It includes grades, so keep it private.</div>
+    </div>
+    <div class="sg"><div class="sg-t">Team code</div>
+      <div class="hint" style="margin:0 0 8px;">This device is unlocked. The data can only be found with the team code.</div>
+      <div class="sg-r"><span class="sg-l">Health check ID</span><button class="nbtn" onclick="navigator.clipboard.writeText(ROOM).then(()=>toast('Copied. Paste it into the ROOM_ID GitHub secret.','tok'))">Copy</button></div>
+      <button class="nbtn danger" onclick="forgetCode()">Forget the code on this device</button>
+    </div>
     <div class="sg"><div class="sg-t">Calendar</div>
       <button class="btn bghost" onclick="exportICS()">Download calendar file (.ics)</button>
       <div class="hint">Every graded deadline and team meeting for the quarter. Import it into Outlook or Google Calendar.</div>
     </div>
     <div class="sg" style="border-color:var(--red);"><div class="sg-t" style="color:var(--red);">Reset this quarter</div>
-      <div class="hint" style="margin:0 0 10px;">Erases every checkmark, comment, grade, poll, and note for Autumn 2026, for everyone. Last spring's data is stored separately and is not affected.</div>
-      <button class="btn bdanger" onclick="resetQuarter()">Reset Autumn 2026 data</button>
+      <div class="hint" style="margin:0 0 10px;">Erases every checkmark, comment, grade, poll, and note for this quarter, for everyone. A backup file downloads first. Other quarters are not affected.</div>
+      <button class="btn bdanger" onclick="resetQuarter()">Reset this quarter</button>
     </div>
     <div class="macts">
       <button class="btn bacc" onclick="saveSettings()">Save for the team</button>
@@ -471,7 +514,7 @@ textarea.inp{width:100%;min-height:60px;resize:vertical;}
 
 <div class="app">
   <header>
-    <div class="logo">Team 5 <small>Hybrid MBA · Autumn 2026</small></div>
+    <div class="logo">Team 5 <small id="qlabel">Hybrid MBA · Autumn 2026</small></div>
     <div class="hright">
       <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" ondblclick="prefs.theme=null;savePrefs();applyTheme()">🌙</button>
       <button class="icon-btn" onclick="openSettings()" title="Settings">⚙ Settings</button>
@@ -522,7 +565,7 @@ const FBCFG={
   appId:"1:773786431955:web:00ad39822845f1b4627f26",
   databaseURL:"https://team-5-tracker-default-rtdb.firebaseio.com"
 };
-const P='t5q4';                       // Autumn 2026 data lives here; spring data stays under t5/
+let ROOM=null,P=null,QCFG=null;        // data lives at rooms/<room>/<quarter>; the room id is derived from the team code
 const SITE='https://thatguy9735.github.io/team5tracker/';
 const DUE_TZ='America/Los_Angeles';   // Canvas deadlines: 11:59 PM Pacific
 const TZL={'America/Los_Angeles':'PT','America/Denver':'MT','America/Chicago':'CT','America/New_York':'ET'};
@@ -536,7 +579,7 @@ const MEM=[
   {name:'Andrew',   init:'AN',bg:'#0369a1',cl:'#bae6fd',tz:'America/Chicago'},
   {name:'Tyler',    init:'TY',bg:'#5b21b6',cl:'#ddd6fe',tz:'America/Los_Angeles'},
 ];
-const COURSES={
+const COURSES_A={
   'MGMT 502':{s:'Strategy',k:'strat',full:'Business Strategy',core:true},
   'ECON 501':{s:'Macro',k:'macro',full:'Analysis of Global Economic Conditions',core:true},
   'FIN 558': {s:'M&A',k:'ma',full:'Mergers & Acquisitions'},
@@ -544,9 +587,9 @@ const COURSES={
   'MKTG':    {s:'Mktg Analytics',k:'mktg',full:'Marketing Analytics'},
   'OTHER':   {s:'Other',k:'other',full:'Other',core:true},
 };
-const ELECTIVES=Object.keys(COURSES).filter(c=>!COURSES[c].core);
+let COURSES=COURSES_A,ELECTIVES=Object.keys(COURSES).filter(c=>!COURSES[c].core);
 const isCore=c=>!!(COURSES[c]||COURSES.OTHER).core;
-const WEEKS=[
+const WEEKS_A=[
   {n:1, s:'2026-09-21',e:'2026-09-27'},
   {n:2, s:'2026-09-28',e:'2026-10-04'},
   {n:3, s:'2026-10-05',e:'2026-10-11'},
@@ -559,7 +602,11 @@ const WEEKS=[
   {n:10,s:'2026-11-23',e:'2026-12-07'},
 ];
 /* Source: Foster HMBA Q4 Tracker.xlsx (Amadeusz), duplicates across week tabs removed */
-const ITEMS=[{"id":"str1_01","c":"MGMT 502","m":1,"n":"Bullseye Model Video","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_02","c":"MGMT 502","m":1,"n":"Read: How David Beats Goliath","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_03","c":"MGMT 502","m":1,"n":"Read: The Perils of Bad Strategy","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_04","c":"MGMT 502","m":1,"n":"Read: AI and Strategy","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_05","c":"MGMT 502","m":1,"n":"Read: 5Forces","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_06","c":"MGMT 502","m":1,"n":"Watch: 5Forces","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_07","c":"MGMT 502","m":1,"n":"Read: Cola Wars","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_08","c":"MGMT 502","m":1,"n":"Watch: VRIO","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_09","c":"MGMT 502","m":1,"n":"Watch VRIO and Sets of Resources","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_10","c":"MGMT 502","m":1,"n":"Read: Ex-Patriots Can't Live Up to Brady","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_11","c":"MGMT 502","m":1,"n":"Read: Trader Joe's","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_12","c":"MGMT 502","m":1,"n":"Read: A 40 Year Debate…","g":"O","t":null,"due":"2026-09-24"},{"id":"eco1_01","c":"ECON 501","m":1,"n":"Read: Textbook Chapter 1, Sections 1.1 and 1.2 (Skim Only)","g":"N","t":null,"due":"2026-09-25"},{"id":"eco1_02","c":"ECON 501","m":1,"n":"Read: One economic sickness, five diagnoses","g":"N","t":null,"due":"2026-09-25"},{"id":"eco1_03","c":"ECON 501","m":1,"n":"Read: Textbook Chapter 2, Section 2.1 (Skim Only)","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_01","c":"FIN 558","m":1,"n":"Watch 7 Videos","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_02","c":"FIN 558","m":1,"n":"Read A note on valuation in private equity settings, 9-297-050, Harvard Business School.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_03","c":"FIN 558","m":1,"n":"Read A note on mergers and acquisitions and valuation, 95B023, Ivey School of Business.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_04","c":"FIN 558","m":1,"n":"Read Creating value through M&As, IMD651, IMD, Lausanne Switzerland.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_05","c":"FIN 558","m":1,"n":"Read: Filmore Industries and Certified Aerospace","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_06","c":"FIN 558","m":1,"n":"Submit: Discussion 1.1: Filmore Industries and Certified Aerospace (Team)","g":"Y","t":"team","due":"2026-09-25"},{"id":"str2_01","c":"MGMT 502","m":2,"n":"Read: David B. Yoffie; Mary Kwak (2006). With Friends Like These: The Art of Managing Complementors","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_02","c":"MGMT 502","m":2,"n":"Watch: Video 2.1","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_03","c":"MGMT 502","m":2,"n":"Read: Network effects in gaming and AI","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_04","c":"MGMT 502","m":2,"n":"FOSTER LIVE","g":"Y","t":null,"due":"2026-09-29"},{"id":"str2_05","c":"MGMT 502","m":2,"n":"Submit: Apply","g":"Y","t":null,"due":"2026-10-01"},{"id":"eco1_04","c":"ECON 501","m":1,"n":"Problem Set 1.1","g":"Y","t":null,"due":"2026-10-04"},{"id":"eco1_05","c":"ECON 501","m":1,"n":"Problem Set 1.2","g":"Y","t":"team","due":"2026-10-04"},{"id":"eco2_01","c":"ECON 501","m":2,"n":"Watch: Video","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_02","c":"ECON 501","m":2,"n":"Read: Section 2.1, Subsection \"Other Measures of Income\"","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_03","c":"ECON 501","m":2,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_04","c":"ECON 501","m":2,"n":"Submit: Problem Set 2.1","g":"Y","t":null,"due":"2026-10-04"},{"id":"fin2_01","c":"FIN 558","m":2,"n":"Submit: Assignment 2.1: Filmore Industries and Certified Aerospace, continued (Individual)","g":"Y","t":null,"due":"2026-10-04"},{"id":"str2_06","c":"MGMT 502","m":2,"n":"Submit: Peer Review","g":"Y","t":null,"due":"2026-10-04"},{"id":"eco3_01","c":"ECON 501","m":3,"n":"(Optional) Read: Avinash Dixit, Microeconomics: A Very Short Introduction, 2014.","g":"O","t":null,"due":"2026-10-06"},{"id":"eco3_02","c":"ECON 501","m":3,"n":"Watch: Microeconomics Refresher","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_03","c":"ECON 501","m":3,"n":"Read: Textbook Chapter 3, Section 3-1","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_04","c":"ECON 501","m":3,"n":"Read: Textbook Chapter 4, Sections 4-1 and 4-2","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_05","c":"ECON 501","m":3,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-06"},{"id":"eco3_06","c":"ECON 501","m":3,"n":"Submit: Group Problem Set 3.1","g":"Y","t":"team","due":"2026-10-11"},{"id":"eco3_07","c":"ECON 501","m":3,"n":"Submit: Discussion 3.1: Module 3 (Week 3)","g":"Y","t":null,"due":"2026-10-11"},{"id":"eco3_08","c":"ECON 501","m":3,"n":"Submit: Course Project: Country Choice","g":"Y","t":"team","due":"2026-10-11"},{"id":"fin3_01","c":"FIN 558","m":3,"n":"Watch: Video 3:1","g":"N","t":null,"due":"2026-10-11"},{"id":"fin3_02","c":"FIN 558","m":3,"n":"Read: HP and Compaq Case","g":"N","t":null,"due":"2026-10-11"},{"id":"fin3_03","c":"FIN 558","m":3,"n":"Submit: Discussion 3.1: HP and Compaq (Team)","g":"Y","t":"team","due":"2026-10-11"},{"id":"str3_01","c":"MGMT 502","m":3,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_02","c":"MGMT 502","m":3,"n":"Read: 2025: The art of optimal distinctiveness: Balancing novelty and familiarity","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_03","c":"MGMT 502","m":3,"n":"Read: Edward Jones: Implementing the Solutions Approach","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_04","c":"MGMT 502","m":3,"n":"Engage: Survey","g":"Y","t":null,"due":"2026-10-11"},{"id":"str3_05","c":"MGMT 502","m":3,"n":"Submit: Strategic Issue 1","g":"Y","t":null,"due":"2026-10-11"},{"id":"fin4_01","c":"FIN 558","m":4,"n":"Submit: Discussion 4.1: HP & Compaq, Part 2 (Team)","g":"Y","t":"team","due":"2026-10-13"},{"id":"fin4_02","c":"FIN 558","m":4,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-13"},{"id":"str4_05","c":"MGMT 502","m":4,"n":"Submit: Apply 2","g":"Y","t":null,"due":"2026-10-15"},{"id":"eco4_01","c":"ECON 501","m":4,"n":"Read: Section 2.3, Subsection \"Measuring Joblessness\" (skip the Case Study)","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_02","c":"ECON 501","m":4,"n":"Watch: 2 Videos and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_03","c":"ECON 501","m":4,"n":"Read: Section 8.4, Subsection \"Transitions into and out of the Labor Force\"","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_04","c":"ECON 501","m":4,"n":"Watch: 2 YouTube videos","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_05","c":"ECON 501","m":4,"n":"Watch: Video and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_06","c":"ECON 501","m":4,"n":"Read: Textbook Chapter 8 (8.1, 8.2, intro)","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_07","c":"ECON 501","m":4,"n":"Watch: 3 Videos and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_08","c":"ECON 501","m":4,"n":"Read: Section 8.5","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_09","c":"ECON 501","m":4,"n":"Read: Section 2.3, Subsection \"Case Study\"","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_10","c":"ECON 501","m":4,"n":"Watch: Video","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_11","c":"ECON 501","m":4,"n":"Watch: YouTube Video","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_12","c":"ECON 501","m":4,"n":"Submit: Problem Set 4.1","g":"Y","t":null,"due":"2026-10-18"},{"id":"eco4_13","c":"ECON 501","m":4,"n":"Submit: Discussion 4.1: Module 4 (Week 4)","g":"Y","t":null,"due":"2026-10-18"},{"id":"fin4_03","c":"FIN 558","m":4,"n":"Submit: Assignment 4.1: Individual Responses to HP/Compaq Case Questions (Individual)","g":"Y","t":null,"due":"2026-10-18"},{"id":"fin4_04","c":"FIN 558","m":4,"n":"Watch: Video 4.1","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_01","c":"MGMT 502","m":4,"n":"Re-Watch: 2 videos","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_02","c":"MGMT 502","m":4,"n":"Read: Michael E. Porter. What Is Strategy?","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_03","c":"MGMT 502","m":4,"n":"Read: JW Rivkin, ME Porter. Matching Dell","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_04","c":"MGMT 502","m":4,"n":"Engage: Survey 4.1","g":"Y","t":null,"due":"2026-10-18"},{"id":"str4_06","c":"MGMT 502","m":4,"n":"Submit: Peer Review 2","g":"Y","t":null,"due":"2026-10-18"},{"id":"str5_01","c":"MGMT 502","m":5,"n":"Read: W. Chan Kim & Renee A. Mauborgne (2004). Blue Ocean Strategy","g":"N","t":null,"due":"2026-10-20"},{"id":"str5_02","c":"MGMT 502","m":5,"n":"Watch: 3 Videos","g":"N","t":null,"due":"2026-10-20"},{"id":"str5_03","c":"MGMT 502","m":5,"n":"Submit: Discussion 5.1 OR Discussion 5.2","g":"Y","t":"team","due":"2026-10-20"},{"id":"str5_04","c":"MGMT 502","m":5,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-20"},{"id":"fin5_01","c":"FIN 558","m":5,"n":"Submit: Discussion 5.1: AT&T and McCaw (Team)","g":"Y","t":"team","due":"2026-10-25"},{"id":"str5_05","c":"MGMT 502","m":5,"n":"Assignment 5.1: Value Curve and Utility Maps Final Submission (Team)","g":"Y","t":"team","due":"2026-10-25"},{"id":"eco6_01","c":"ECON 501","m":6,"n":"Read: Textbook Chapter 2, Sections 2-1 and 2-2","g":"N","t":null,"due":"2026-10-27"},{"id":"eco6_02","c":"ECON 501","m":6,"n":"Read: Textbook Chapter 6, Multiple Sections","g":"N","t":null,"due":"2026-10-27"},{"id":"eco6_03","c":"ECON 501","m":6,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-27"},{"id":"fin5_02","c":"FIN 558","m":5,"n":"Submit: Assignment 5.1: AT&T and McCaw (Individual)","g":"Y","t":null,"due":"2026-10-27"},{"id":"eco6_04","c":"ECON 501","m":6,"n":"Read: Article Is the U.S. in an Above-Target Inflation Regime?","g":"N","t":null,"due":"2026-11-01"},{"id":"eco6_05","c":"ECON 501","m":6,"n":"Submit: Individual Problem Set 6.1","g":"Y","t":null,"due":"2026-11-01"},{"id":"eco6_07","c":"ECON 501","m":6,"n":"Submit: Discussion 6.1: Module 3 (Week 6)","g":"Y","t":null,"due":"2026-11-01"},{"id":"fin5_03","c":"FIN 558","m":5,"n":"Watch: Video 5.1: AT&T & McCaw Epilogue","g":"N","t":null,"due":"2026-11-01"},{"id":"fin5_04","c":"FIN 558","m":5,"n":"Submit: Course Evaluations","g":"N","t":null,"due":"2026-11-01"},{"id":"str5_06","c":"MGMT 502","m":5,"n":"E-mail for Approval: Blue Ocean Strategy Project (Team)","g":"Y","t":"team","due":"2026-11-01"},{"id":"str6_01","c":"MGMT 502","m":6,"n":"Read: Giovanni Gavetti & Jan W. Rivkin (2005). How Strategists Really Think: Tapping the Power of Analogy","g":"N","t":null,"due":"2026-11-01"},{"id":"str6_02","c":"MGMT 502","m":6,"n":"Watch: 3 Videos","g":"N","t":null,"due":"2026-11-01"},{"id":"str6_03","c":"MGMT 502","m":6,"n":"Submit: Blue Ocean Project","g":"Y","t":"team","due":"2026-11-01"},{"id":"str7_01","c":"MGMT 502","m":7,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-03"},{"id":"str7_02","c":"MGMT 502","m":7,"n":"Read: Coyne & Horn (2009). Predicting Your Competitor's Reaction","g":"N","t":null,"due":"2026-11-03"},{"id":"str7_03","c":"MGMT 502","m":7,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-11-03"},{"id":"str7_04","c":"MGMT 502","m":7,"n":"Submit: Apply 3","g":"Y","t":null,"due":"2026-11-05"},{"id":"eco6_06","c":"ECON 501","m":6,"n":"Start: Group Assignment 6.2 -- Part 1 of Course Project","g":"Y","t":"team","due":"2026-11-08"},{"id":"eco7_01","c":"ECON 501","m":7,"n":"Read: Textbook Chapter 12 (Introduction to Economic Fluctuations)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_02","c":"ECON 501","m":7,"n":"Watch: 1 Video (Business cycles, Economy in the short run vs. long run)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_03","c":"ECON 501","m":7,"n":"Read: Sections 12-3, 12-4","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_04","c":"ECON 501","m":7,"n":"Watch: 3 Videos (The Model of Aggregate Supply and Aggregate Demand) & solve ungraded practice problems","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_05","c":"ECON 501","m":7,"n":"Read: Section 12-5 Stabilization Policy","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_06","c":"ECON 501","m":7,"n":"Watch: Video (Stabilization policies & AD-AS model) & solve an ungraded practice problem","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_07","c":"ECON 501","m":7,"n":"Read: Textbook Chapter 18 (Alternative Perspectives on Stabilization Policy)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_08","c":"ECON 501","m":7,"n":"Watch: Video (Policy lags, Autostabilizers, Supply-Side Effects)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_09","c":"ECON 501","m":7,"n":"Submit: Individual Problem Set 7.1","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco7_10","c":"ECON 501","m":7,"n":"Submit: Discussion 7.1: Module 7 (Week 7)","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco7_11","c":"ECON 501","m":7,"n":"Submit: Group Assignment 6.2 -- Part 1 of Course Project","g":"Y","t":"team","due":"2026-11-08"},{"id":"str7_05","c":"MGMT 502","m":7,"n":"Submit: Review 3","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco8_01","c":"ECON 501","m":8,"n":"Read: Textbook Chapter 13: Aggregate Demand I: Building the IS–LM Model","g":"N","t":null,"due":"2026-11-10"},{"id":"eco8_02","c":"ECON 501","m":8,"n":"Read: Textbook Chapter 14: Aggregate Demand II: Applying the IS–LM Model","g":"N","t":null,"due":"2026-11-10"},{"id":"eco8_03","c":"ECON 501","m":8,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-11-10"},{"id":"eco8_04","c":"ECON 501","m":8,"n":"Submit: Individual Problem Set 8.1","g":"Y","t":null,"due":"2026-11-15"},{"id":"eco8_05","c":"ECON 501","m":8,"n":"Start: Group Problem Set 8.2","g":"Y","t":"team","due":"2026-11-15"},{"id":"eco8_06","c":"ECON 501","m":8,"n":"Start: Group Assignment 8.3 -- Part 2 of Course Project","g":"Y","t":"team","due":"2026-11-15"},{"id":"eco8_07","c":"ECON 501","m":8,"n":"Submit: Discussion 8.1: Module 3 (Week 8)","g":"Y","t":null,"due":"2026-11-15"},{"id":"str8_01","c":"MGMT 502","m":8,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-15"},{"id":"str8_02","c":"MGMT 502","m":8,"n":"Read: The Walt Disney Company - 2017","g":"N","t":null,"due":"2026-11-15"},{"id":"str8_03","c":"MGMT 502","m":8,"n":"Engage: Please submit this very short survey about Disney.","g":"Y","t":null,"due":"2026-11-15"},{"id":"str8_04","c":"MGMT 502","m":8,"n":"Submit: Strategic Issue 2: Disney","g":"Y","t":"pair","due":"2026-11-15"},{"id":"eco9_01","c":"ECON 501","m":9,"n":"Watch Video: Motivation","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_02","c":"ECON 501","m":9,"n":"Watch: 1 Video (Introduction and Misery Index)","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_03","c":"ECON 501","m":9,"n":"Read: Textbook Chapter 16: Aggregate Supply and the Short-Run Tradeoff Between Inflation and Unemployment, Section 16-2 \"Inflation, Unemployment, and the Phillips Curve\"","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_04","c":"ECON 501","m":9,"n":"Watch Video: Original Phillips curve & solve ungraded practice problem","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_05","c":"ECON 501","m":9,"n":"Read: Textbook Subsections \"Adaptive Expectations and Inflation Inertia,\" \"The Short-Run Tradeoff Between Inflation and Unemployment\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_06","c":"ECON 501","m":9,"n":"Watch Video: Rational-Expectations Phillips Curve: the short-run and long-run","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_07","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Two Causes of Rising and Falling Inflation\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_08","c":"ECON 501","m":9,"n":"Watch Video: Demand-pull and Cost-push Inflation & solve ungraded practice problem","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_09","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Disinflation and the Sacrifice Ratio\", Section 16-2 / Subsection \"Unemployment and Okun’s Law\", Section 12-1 \"The Facts About the Business Cycle\" / Subsections \"Rational Expectations and the Possibility of Painless Disinflation\" and \"Anchored Expectations\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_10","c":"ECON 501","m":9,"n":"Watch Video: Cost of Disinflation","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_11","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Hysteresis and the Challenge to the Natural-Rate Hypothesis\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_12","c":"ECON 501","m":9,"n":"Submit: Individual Problem Set 9.1","g":"Y","t":null,"due":"2026-11-22"},{"id":"eco9_13","c":"ECON 501","m":9,"n":"Submit: Group Assignment 8.3 -- Part 2 of Course Project","g":"Y","t":"team","due":"2026-11-22"},{"id":"eco9_14","c":"ECON 501","m":9,"n":"Submit: Discussion 9.1: Module 9","g":"Y","t":null,"due":"2026-11-22"},{"id":"str9_01","c":"MGMT 502","m":9,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_02","c":"MGMT 502","m":9,"n":"Read: Note on Organizational Culture","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_03","c":"MGMT 502","m":9,"n":"Read: The New Analytics of Culture","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_04","c":"MGMT 502","m":9,"n":"Review: Netflix Culture Slide Deck Optional","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_05","c":"MGMT 502","m":9,"n":"Read: Netflix's Culture: Binge or Cringe?","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_06","c":"MGMT 502","m":9,"n":"Submit: Discussion 9.1: Organizational Design Horror Stories","g":"Y","t":null,"due":"2026-11-22"},{"id":"eco10_01","c":"ECON 501","m":10,"n":"Watch: Introductory Video","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_02","c":"ECON 501","m":10,"n":"Read: Textbook Review Section 3-1 What Determines the Total Production of Goods and Services? / Read Subsection \"The Firm’s Demand for Factors\", Section 3-2 How Is National Income Distributed to the Factors of Production?","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_03","c":"ECON 501","m":10,"n":"Watch: Video","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_04","c":"ECON 501","m":10,"n":"Read: Textbook Section 9-1 The Basic Solow Model / Section 9-2 The Golden Rule Level of Capital / Subsections \"Evaluating the Rate of Saving\" and \"Changing the Rate of Saving\", Section 11-3 Policies to Promote Growth","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_05","c":"ECON 501","m":10,"n":"Read: Textbook Subsections \"Adaptive Expectations and Inflation Inertia,\" \"The Short-Run Tradeoff Between Inflation and Unemployment\", Section 16-2","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_06","c":"ECON 501","m":10,"n":"Watch: 4 Videos","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_07","c":"ECON 501","m":10,"n":"Read: Textbook / 10-1 Population Growth in the Solow Model, skim: Subsection \"Alternative Perspectives on Population Growth\" / skim: Section 10-3 Beyond the Solow Model: Endogenous Growth Theory / 11-1 From Growth Theory to Growth Empirics / skim: Section 11-2 Accounting for the Sources of Economic Growth / Subsections \"Establishing the Right Institutions\", \"\"Establishing the Right Institutions\", \"Establishing the Right Institutions\", \"Permitting Free Trade\", Section 11-3 Policies to Promote Growth","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_08","c":"ECON 501","m":10,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_09","c":"ECON 501","m":10,"n":"Read: Textbook Subsection \"Convergence\" , Section 11-1 From Growth Theory to Growth Empirics","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_10","c":"ECON 501","m":10,"n":"Submit: Individual Problem Set 10.1","g":"Y","t":null,"due":"2026-11-29"},{"id":"eco10_12","c":"ECON 501","m":10,"n":"Submit: Discussion 10.1: Module 10","g":"Y","t":null,"due":"2026-11-29"},{"id":"eco10_13","c":"ECON 501","m":10,"n":"Submit: Course Evaluations","g":"N","t":null,"due":"2026-11-29"},{"id":"str10_01","c":"MGMT 502","m":10,"n":"Submit: Strategic Issue 3","g":"Y","t":"pair","due":"2026-11-29"},{"id":"str10_02","c":"MGMT 502","m":10,"n":"Watch: Final Thoughts","g":"N","t":null,"due":"2026-11-29"},{"id":"str10_05","c":"MGMT 502","m":10,"n":"Submit: UW Issued Course Evaluation","g":"N","t":null,"due":"2026-12-04"},{"id":"eco10_11","c":"ECON 501","m":10,"n":"Submit: Group Assignment 10.3 -- Part 3 of Course Project","g":"Y","t":"team","due":"2026-12-06"},{"id":"str10_03","c":"MGMT 502","m":10,"n":"Submit: Lessons Learned","g":"Y","t":"team","due":"2026-12-07"},{"id":"str10_04","c":"MGMT 502","m":10,"n":"Submit: Big Group Evaluation","g":"Y","t":null,"due":"2026-12-07"}];
+const ITEMS_A=[{"id":"str1_01","c":"MGMT 502","m":1,"n":"Bullseye Model Video","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_02","c":"MGMT 502","m":1,"n":"Read: How David Beats Goliath","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_03","c":"MGMT 502","m":1,"n":"Read: The Perils of Bad Strategy","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_04","c":"MGMT 502","m":1,"n":"Read: AI and Strategy","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_05","c":"MGMT 502","m":1,"n":"Read: 5Forces","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_06","c":"MGMT 502","m":1,"n":"Watch: 5Forces","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_07","c":"MGMT 502","m":1,"n":"Read: Cola Wars","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_08","c":"MGMT 502","m":1,"n":"Watch: VRIO","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_09","c":"MGMT 502","m":1,"n":"Watch VRIO and Sets of Resources","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_10","c":"MGMT 502","m":1,"n":"Read: Ex-Patriots Can't Live Up to Brady","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_11","c":"MGMT 502","m":1,"n":"Read: Trader Joe's","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_12","c":"MGMT 502","m":1,"n":"Read: A 40 Year Debate…","g":"O","t":null,"due":"2026-09-24"},{"id":"eco1_01","c":"ECON 501","m":1,"n":"Read: Textbook Chapter 1, Sections 1.1 and 1.2 (Skim Only)","g":"N","t":null,"due":"2026-09-25"},{"id":"eco1_02","c":"ECON 501","m":1,"n":"Read: One economic sickness, five diagnoses","g":"N","t":null,"due":"2026-09-25"},{"id":"eco1_03","c":"ECON 501","m":1,"n":"Read: Textbook Chapter 2, Section 2.1 (Skim Only)","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_01","c":"FIN 558","m":1,"n":"Watch 7 Videos","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_02","c":"FIN 558","m":1,"n":"Read A note on valuation in private equity settings, 9-297-050, Harvard Business School.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_03","c":"FIN 558","m":1,"n":"Read A note on mergers and acquisitions and valuation, 95B023, Ivey School of Business.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_04","c":"FIN 558","m":1,"n":"Read Creating value through M&As, IMD651, IMD, Lausanne Switzerland.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_05","c":"FIN 558","m":1,"n":"Read: Filmore Industries and Certified Aerospace","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_06","c":"FIN 558","m":1,"n":"Submit: Discussion 1.1: Filmore Industries and Certified Aerospace (Team)","g":"Y","t":"team","due":"2026-09-25"},{"id":"str2_01","c":"MGMT 502","m":2,"n":"Read: David B. Yoffie; Mary Kwak (2006). With Friends Like These: The Art of Managing Complementors","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_02","c":"MGMT 502","m":2,"n":"Watch: Video 2.1","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_03","c":"MGMT 502","m":2,"n":"Read: Network effects in gaming and AI","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_04","c":"MGMT 502","m":2,"n":"FOSTER LIVE","g":"Y","t":null,"due":"2026-09-29"},{"id":"str2_05","c":"MGMT 502","m":2,"n":"Submit: Apply","g":"Y","t":null,"due":"2026-10-01"},{"id":"eco1_04","c":"ECON 501","m":1,"n":"Problem Set 1.1","g":"Y","t":null,"due":"2026-10-04"},{"id":"eco1_05","c":"ECON 501","m":1,"n":"Problem Set 1.2","g":"Y","t":"team","due":"2026-10-04"},{"id":"eco2_01","c":"ECON 501","m":2,"n":"Watch: Video","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_02","c":"ECON 501","m":2,"n":"Read: Section 2.1, Subsection \"Other Measures of Income\"","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_03","c":"ECON 501","m":2,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_04","c":"ECON 501","m":2,"n":"Submit: Problem Set 2.1","g":"Y","t":null,"due":"2026-10-04"},{"id":"fin2_01","c":"FIN 558","m":2,"n":"Submit: Assignment 2.1: Filmore Industries and Certified Aerospace, continued (Individual)","g":"Y","t":null,"due":"2026-10-04"},{"id":"str2_06","c":"MGMT 502","m":2,"n":"Submit: Peer Review","g":"Y","t":null,"due":"2026-10-04"},{"id":"eco3_01","c":"ECON 501","m":3,"n":"(Optional) Read: Avinash Dixit, Microeconomics: A Very Short Introduction, 2014.","g":"O","t":null,"due":"2026-10-06"},{"id":"eco3_02","c":"ECON 501","m":3,"n":"Watch: Microeconomics Refresher","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_03","c":"ECON 501","m":3,"n":"Read: Textbook Chapter 3, Section 3-1","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_04","c":"ECON 501","m":3,"n":"Read: Textbook Chapter 4, Sections 4-1 and 4-2","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_05","c":"ECON 501","m":3,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-06"},{"id":"eco3_06","c":"ECON 501","m":3,"n":"Submit: Group Problem Set 3.1","g":"Y","t":"team","due":"2026-10-11"},{"id":"eco3_07","c":"ECON 501","m":3,"n":"Submit: Discussion 3.1: Module 3 (Week 3)","g":"Y","t":null,"due":"2026-10-11"},{"id":"eco3_08","c":"ECON 501","m":3,"n":"Submit: Course Project: Country Choice","g":"Y","t":"team","due":"2026-10-11"},{"id":"fin3_01","c":"FIN 558","m":3,"n":"Watch: Video 3:1","g":"N","t":null,"due":"2026-10-11"},{"id":"fin3_02","c":"FIN 558","m":3,"n":"Read: HP and Compaq Case","g":"N","t":null,"due":"2026-10-11"},{"id":"fin3_03","c":"FIN 558","m":3,"n":"Submit: Discussion 3.1: HP and Compaq (Team)","g":"Y","t":"team","due":"2026-10-11"},{"id":"str3_01","c":"MGMT 502","m":3,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_02","c":"MGMT 502","m":3,"n":"Read: 2025: The art of optimal distinctiveness: Balancing novelty and familiarity","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_03","c":"MGMT 502","m":3,"n":"Read: Edward Jones: Implementing the Solutions Approach","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_04","c":"MGMT 502","m":3,"n":"Engage: Survey","g":"Y","t":null,"due":"2026-10-11"},{"id":"str3_05","c":"MGMT 502","m":3,"n":"Submit: Strategic Issue 1","g":"Y","t":null,"due":"2026-10-11"},{"id":"fin4_01","c":"FIN 558","m":4,"n":"Submit: Discussion 4.1: HP & Compaq, Part 2 (Team)","g":"Y","t":"team","due":"2026-10-13"},{"id":"fin4_02","c":"FIN 558","m":4,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-13"},{"id":"str4_05","c":"MGMT 502","m":4,"n":"Submit: Apply 2","g":"Y","t":null,"due":"2026-10-15"},{"id":"eco4_01","c":"ECON 501","m":4,"n":"Read: Section 2.3, Subsection \"Measuring Joblessness\" (skip the Case Study)","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_02","c":"ECON 501","m":4,"n":"Watch: 2 Videos and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_03","c":"ECON 501","m":4,"n":"Read: Section 8.4, Subsection \"Transitions into and out of the Labor Force\"","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_04","c":"ECON 501","m":4,"n":"Watch: 2 YouTube videos","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_05","c":"ECON 501","m":4,"n":"Watch: Video and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_06","c":"ECON 501","m":4,"n":"Read: Textbook Chapter 8 (8.1, 8.2, intro)","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_07","c":"ECON 501","m":4,"n":"Watch: 3 Videos and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_08","c":"ECON 501","m":4,"n":"Read: Section 8.5","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_09","c":"ECON 501","m":4,"n":"Read: Section 2.3, Subsection \"Case Study\"","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_10","c":"ECON 501","m":4,"n":"Watch: Video","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_11","c":"ECON 501","m":4,"n":"Watch: YouTube Video","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_12","c":"ECON 501","m":4,"n":"Submit: Problem Set 4.1","g":"Y","t":null,"due":"2026-10-18"},{"id":"eco4_13","c":"ECON 501","m":4,"n":"Submit: Discussion 4.1: Module 4 (Week 4)","g":"Y","t":null,"due":"2026-10-18"},{"id":"fin4_03","c":"FIN 558","m":4,"n":"Submit: Assignment 4.1: Individual Responses to HP/Compaq Case Questions (Individual)","g":"Y","t":null,"due":"2026-10-18"},{"id":"fin4_04","c":"FIN 558","m":4,"n":"Watch: Video 4.1","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_01","c":"MGMT 502","m":4,"n":"Re-Watch: 2 videos","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_02","c":"MGMT 502","m":4,"n":"Read: Michael E. Porter. What Is Strategy?","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_03","c":"MGMT 502","m":4,"n":"Read: JW Rivkin, ME Porter. Matching Dell","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_04","c":"MGMT 502","m":4,"n":"Engage: Survey 4.1","g":"Y","t":null,"due":"2026-10-18"},{"id":"str4_06","c":"MGMT 502","m":4,"n":"Submit: Peer Review 2","g":"Y","t":null,"due":"2026-10-18"},{"id":"str5_01","c":"MGMT 502","m":5,"n":"Read: W. Chan Kim & Renee A. Mauborgne (2004). Blue Ocean Strategy","g":"N","t":null,"due":"2026-10-20"},{"id":"str5_02","c":"MGMT 502","m":5,"n":"Watch: 3 Videos","g":"N","t":null,"due":"2026-10-20"},{"id":"str5_03","c":"MGMT 502","m":5,"n":"Submit: Discussion 5.1 OR Discussion 5.2","g":"Y","t":"team","due":"2026-10-20"},{"id":"str5_04","c":"MGMT 502","m":5,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-20"},{"id":"fin5_01","c":"FIN 558","m":5,"n":"Submit: Discussion 5.1: AT&T and McCaw (Team)","g":"Y","t":"team","due":"2026-10-25"},{"id":"str5_05","c":"MGMT 502","m":5,"n":"Assignment 5.1: Value Curve and Utility Maps Final Submission (Team)","g":"Y","t":"team","due":"2026-10-25"},{"id":"eco6_01","c":"ECON 501","m":6,"n":"Read: Textbook Chapter 2, Sections 2-1 and 2-2","g":"N","t":null,"due":"2026-10-27"},{"id":"eco6_02","c":"ECON 501","m":6,"n":"Read: Textbook Chapter 6, Multiple Sections","g":"N","t":null,"due":"2026-10-27"},{"id":"eco6_03","c":"ECON 501","m":6,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-27"},{"id":"fin5_02","c":"FIN 558","m":5,"n":"Submit: Assignment 5.1: AT&T and McCaw (Individual)","g":"Y","t":null,"due":"2026-10-27"},{"id":"eco6_04","c":"ECON 501","m":6,"n":"Read: Article Is the U.S. in an Above-Target Inflation Regime?","g":"N","t":null,"due":"2026-11-01"},{"id":"eco6_05","c":"ECON 501","m":6,"n":"Submit: Individual Problem Set 6.1","g":"Y","t":null,"due":"2026-11-01"},{"id":"eco6_07","c":"ECON 501","m":6,"n":"Submit: Discussion 6.1: Module 3 (Week 6)","g":"Y","t":null,"due":"2026-11-01"},{"id":"fin5_03","c":"FIN 558","m":5,"n":"Watch: Video 5.1: AT&T & McCaw Epilogue","g":"N","t":null,"due":"2026-11-01"},{"id":"fin5_04","c":"FIN 558","m":5,"n":"Submit: Course Evaluations","g":"N","t":null,"due":"2026-11-01"},{"id":"str5_06","c":"MGMT 502","m":5,"n":"E-mail for Approval: Blue Ocean Strategy Project (Team)","g":"Y","t":"team","due":"2026-11-01"},{"id":"str6_01","c":"MGMT 502","m":6,"n":"Read: Giovanni Gavetti & Jan W. Rivkin (2005). How Strategists Really Think: Tapping the Power of Analogy","g":"N","t":null,"due":"2026-11-01"},{"id":"str6_02","c":"MGMT 502","m":6,"n":"Watch: 3 Videos","g":"N","t":null,"due":"2026-11-01"},{"id":"str6_03","c":"MGMT 502","m":6,"n":"Submit: Blue Ocean Project","g":"Y","t":"team","due":"2026-11-01"},{"id":"str7_01","c":"MGMT 502","m":7,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-03"},{"id":"str7_02","c":"MGMT 502","m":7,"n":"Read: Coyne & Horn (2009). Predicting Your Competitor's Reaction","g":"N","t":null,"due":"2026-11-03"},{"id":"str7_03","c":"MGMT 502","m":7,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-11-03"},{"id":"str7_04","c":"MGMT 502","m":7,"n":"Submit: Apply 3","g":"Y","t":null,"due":"2026-11-05"},{"id":"eco6_06","c":"ECON 501","m":6,"n":"Start: Group Assignment 6.2 -- Part 1 of Course Project","g":"Y","t":"team","due":"2026-11-08"},{"id":"eco7_01","c":"ECON 501","m":7,"n":"Read: Textbook Chapter 12 (Introduction to Economic Fluctuations)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_02","c":"ECON 501","m":7,"n":"Watch: 1 Video (Business cycles, Economy in the short run vs. long run)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_03","c":"ECON 501","m":7,"n":"Read: Sections 12-3, 12-4","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_04","c":"ECON 501","m":7,"n":"Watch: 3 Videos (The Model of Aggregate Supply and Aggregate Demand) & solve ungraded practice problems","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_05","c":"ECON 501","m":7,"n":"Read: Section 12-5 Stabilization Policy","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_06","c":"ECON 501","m":7,"n":"Watch: Video (Stabilization policies & AD-AS model) & solve an ungraded practice problem","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_07","c":"ECON 501","m":7,"n":"Read: Textbook Chapter 18 (Alternative Perspectives on Stabilization Policy)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_08","c":"ECON 501","m":7,"n":"Watch: Video (Policy lags, Autostabilizers, Supply-Side Effects)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_09","c":"ECON 501","m":7,"n":"Submit: Individual Problem Set 7.1","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco7_10","c":"ECON 501","m":7,"n":"Submit: Discussion 7.1: Module 7 (Week 7)","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco7_11","c":"ECON 501","m":7,"n":"Submit: Group Assignment 6.2 -- Part 1 of Course Project","g":"Y","t":"team","due":"2026-11-08"},{"id":"str7_05","c":"MGMT 502","m":7,"n":"Submit: Review 3","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco8_01","c":"ECON 501","m":8,"n":"Read: Textbook Chapter 13: Aggregate Demand I: Building the IS–LM Model","g":"N","t":null,"due":"2026-11-10"},{"id":"eco8_02","c":"ECON 501","m":8,"n":"Read: Textbook Chapter 14: Aggregate Demand II: Applying the IS–LM Model","g":"N","t":null,"due":"2026-11-10"},{"id":"eco8_03","c":"ECON 501","m":8,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-11-10"},{"id":"eco8_04","c":"ECON 501","m":8,"n":"Submit: Individual Problem Set 8.1","g":"Y","t":null,"due":"2026-11-15"},{"id":"eco8_05","c":"ECON 501","m":8,"n":"Start: Group Problem Set 8.2","g":"Y","t":"team","due":"2026-11-15"},{"id":"eco8_06","c":"ECON 501","m":8,"n":"Start: Group Assignment 8.3 -- Part 2 of Course Project","g":"Y","t":"team","due":"2026-11-15"},{"id":"eco8_07","c":"ECON 501","m":8,"n":"Submit: Discussion 8.1: Module 3 (Week 8)","g":"Y","t":null,"due":"2026-11-15"},{"id":"str8_01","c":"MGMT 502","m":8,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-15"},{"id":"str8_02","c":"MGMT 502","m":8,"n":"Read: The Walt Disney Company - 2017","g":"N","t":null,"due":"2026-11-15"},{"id":"str8_03","c":"MGMT 502","m":8,"n":"Engage: Please submit this very short survey about Disney.","g":"Y","t":null,"due":"2026-11-15"},{"id":"str8_04","c":"MGMT 502","m":8,"n":"Submit: Strategic Issue 2: Disney","g":"Y","t":"pair","due":"2026-11-15"},{"id":"eco9_01","c":"ECON 501","m":9,"n":"Watch Video: Motivation","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_02","c":"ECON 501","m":9,"n":"Watch: 1 Video (Introduction and Misery Index)","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_03","c":"ECON 501","m":9,"n":"Read: Textbook Chapter 16: Aggregate Supply and the Short-Run Tradeoff Between Inflation and Unemployment, Section 16-2 \"Inflation, Unemployment, and the Phillips Curve\"","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_04","c":"ECON 501","m":9,"n":"Watch Video: Original Phillips curve & solve ungraded practice problem","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_05","c":"ECON 501","m":9,"n":"Read: Textbook Subsections \"Adaptive Expectations and Inflation Inertia,\" \"The Short-Run Tradeoff Between Inflation and Unemployment\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_06","c":"ECON 501","m":9,"n":"Watch Video: Rational-Expectations Phillips Curve: the short-run and long-run","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_07","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Two Causes of Rising and Falling Inflation\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_08","c":"ECON 501","m":9,"n":"Watch Video: Demand-pull and Cost-push Inflation & solve ungraded practice problem","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_09","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Disinflation and the Sacrifice Ratio\", Section 16-2 / Subsection \"Unemployment and Okun’s Law\", Section 12-1 \"The Facts About the Business Cycle\" / Subsections \"Rational Expectations and the Possibility of Painless Disinflation\" and \"Anchored Expectations\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_10","c":"ECON 501","m":9,"n":"Watch Video: Cost of Disinflation","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_11","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Hysteresis and the Challenge to the Natural-Rate Hypothesis\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_12","c":"ECON 501","m":9,"n":"Submit: Individual Problem Set 9.1","g":"Y","t":null,"due":"2026-11-22"},{"id":"eco9_13","c":"ECON 501","m":9,"n":"Submit: Group Assignment 8.3 -- Part 2 of Course Project","g":"Y","t":"team","due":"2026-11-22"},{"id":"eco9_14","c":"ECON 501","m":9,"n":"Submit: Discussion 9.1: Module 9","g":"Y","t":null,"due":"2026-11-22"},{"id":"str9_01","c":"MGMT 502","m":9,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_02","c":"MGMT 502","m":9,"n":"Read: Note on Organizational Culture","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_03","c":"MGMT 502","m":9,"n":"Read: The New Analytics of Culture","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_04","c":"MGMT 502","m":9,"n":"Review: Netflix Culture Slide Deck Optional","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_05","c":"MGMT 502","m":9,"n":"Read: Netflix's Culture: Binge or Cringe?","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_06","c":"MGMT 502","m":9,"n":"Submit: Discussion 9.1: Organizational Design Horror Stories","g":"Y","t":null,"due":"2026-11-22"},{"id":"eco10_01","c":"ECON 501","m":10,"n":"Watch: Introductory Video","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_02","c":"ECON 501","m":10,"n":"Read: Textbook Review Section 3-1 What Determines the Total Production of Goods and Services? / Read Subsection \"The Firm’s Demand for Factors\", Section 3-2 How Is National Income Distributed to the Factors of Production?","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_03","c":"ECON 501","m":10,"n":"Watch: Video","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_04","c":"ECON 501","m":10,"n":"Read: Textbook Section 9-1 The Basic Solow Model / Section 9-2 The Golden Rule Level of Capital / Subsections \"Evaluating the Rate of Saving\" and \"Changing the Rate of Saving\", Section 11-3 Policies to Promote Growth","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_05","c":"ECON 501","m":10,"n":"Read: Textbook Subsections \"Adaptive Expectations and Inflation Inertia,\" \"The Short-Run Tradeoff Between Inflation and Unemployment\", Section 16-2","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_06","c":"ECON 501","m":10,"n":"Watch: 4 Videos","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_07","c":"ECON 501","m":10,"n":"Read: Textbook / 10-1 Population Growth in the Solow Model, skim: Subsection \"Alternative Perspectives on Population Growth\" / skim: Section 10-3 Beyond the Solow Model: Endogenous Growth Theory / 11-1 From Growth Theory to Growth Empirics / skim: Section 11-2 Accounting for the Sources of Economic Growth / Subsections \"Establishing the Right Institutions\", \"\"Establishing the Right Institutions\", \"Establishing the Right Institutions\", \"Permitting Free Trade\", Section 11-3 Policies to Promote Growth","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_08","c":"ECON 501","m":10,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_09","c":"ECON 501","m":10,"n":"Read: Textbook Subsection \"Convergence\" , Section 11-1 From Growth Theory to Growth Empirics","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_10","c":"ECON 501","m":10,"n":"Submit: Individual Problem Set 10.1","g":"Y","t":null,"due":"2026-11-29"},{"id":"eco10_12","c":"ECON 501","m":10,"n":"Submit: Discussion 10.1: Module 10","g":"Y","t":null,"due":"2026-11-29"},{"id":"eco10_13","c":"ECON 501","m":10,"n":"Submit: Course Evaluations","g":"N","t":null,"due":"2026-11-29"},{"id":"str10_01","c":"MGMT 502","m":10,"n":"Submit: Strategic Issue 3","g":"Y","t":"pair","due":"2026-11-29"},{"id":"str10_02","c":"MGMT 502","m":10,"n":"Watch: Final Thoughts","g":"N","t":null,"due":"2026-11-29"},{"id":"str10_05","c":"MGMT 502","m":10,"n":"Submit: UW Issued Course Evaluation","g":"N","t":null,"due":"2026-12-04"},{"id":"eco10_11","c":"ECON 501","m":10,"n":"Submit: Group Assignment 10.3 -- Part 3 of Course Project","g":"Y","t":"team","due":"2026-12-06"},{"id":"str10_03","c":"MGMT 502","m":10,"n":"Submit: Lessons Learned","g":"Y","t":"team","due":"2026-12-07"},{"id":"str10_04","c":"MGMT 502","m":10,"n":"Submit: Big Group Evaluation","g":"Y","t":null,"due":"2026-12-07"}];
+let WEEKS=WEEKS_A,ITEMS=ITEMS_A;
+const QA={id:'t5q4',label:'Autumn 2026',weeks:WEEKS_A,courses:COURSES_A,items:ITEMS_A,builtin:true};
+const NW=()=>WEEKS.length;
+const RP=()=>`rooms/${ROOM}`;
 
 /* ================= STATE ================= */
 let db=null,me='',tab='upcoming',curW=1,searchQ='';
@@ -589,7 +636,7 @@ function zoned(ymd,hm,tz){
   const asTz=Date.UTC(+p.year,+p.month-1,+p.day,(+p.hour)%24,+p.minute);
   return new Date(guess-(asTz-guess));
 }
-function weekOf(s){for(const w of WEEKS)if(s<=w.e)return w.n;return 10;}
+function weekOf(s){for(const w of WEEKS)if(s<=w.e)return w.n;return NW();}
 function detectWeek(){const t=todayStr();return t<WEEKS[0].s?1:weekOf(t);}
 function rangeLbl(w){const W=WEEKS[w-1];return `${fmtDay(W.s,{month:'short',day:'numeric'})} to ${fmtDay(W.e,{month:'short',day:'numeric'})}`;}
 function fmt12(hm){if(!hm)return '';const[h,m]=hm.split(':').map(Number);return `${h%12||12}:${pad(m)} ${h<12?'AM':'PM'}`;}
@@ -628,6 +675,7 @@ function courseOk(x){return mine(x)&&(prefs.course==='all'||x.c===prefs.course);
 function liveFor(w){return ALL.filter(x=>isLive(x)&&x.w===w&&courseOk(x));}
 function vis(x){return courseOk(x)&&!isLive(x)&&(prefs.readings||isKey(x));}
 function needName(){toast('Pick your name first','terr');openPicker();return false;}
+function ready(){if(!P){openGate();return false;}if(!me)return needName();return true;}
 function logAct(action,id){if(!db||!me)return;db.ref(`${P}/log`).push({who:me,action,id:id||'',label:BYID[id]?.n||id||'',ts:TS()});}
 
 function rebuildItems(){
@@ -649,7 +697,7 @@ function boot(){
   buildPicker();
   applyTheme();
   sw(tab,true);
-  if(!me)openPicker();else updateYou();
+  if(me)updateYou();
   setupKeyboard();
   setInterval(()=>{updateMeetChip();if(['upcoming','week'].includes(tab))renderAll();},60000);
   setInterval(heartbeat,60000);
@@ -663,13 +711,17 @@ function boot(){
 }
 function loadPrefs(){
   try{const d=JSON.parse(localStorage.getItem('t5q4u')||'{}');me=d.me||'';prefs={...prefs,...(d.prefs||{})};lastLogSeen=d.lastLogSeen||0;}catch(e){}
-  try{privNotes=JSON.parse(localStorage.getItem('t5q4_notes')||'{}');}catch(e){}
+
   curW=detectWeek();tab=prefs.tab||'upcoming';
 }
 function savePrefs(){try{localStorage.setItem('t5q4u',JSON.stringify({me,prefs,lastLogSeen}));}catch(e){}}
 
+let SUBS=[];
+function sub$(ref,cb,err){ref.on('value',cb,err);SUBS.push([ref,cb]);}
+function offAll(){SUBS.forEach(([r,c])=>r.off('value',c));SUBS=[];}
 function setupListeners(){
-  const L=(path,cb)=>db.ref(`${P}/${path}`).on('value',s=>{if(dbStatus==='loading')setDb('live');cb(s.val()||{});},e=>dbFail(e,path));
+  offAll();
+  const L=(path,cb)=>sub$(db.ref(`${P}/${path}`),s=>{if(dbStatus==='loading')setDb('live');cb(s.val()||{});},e=>dbFail(e,path));
   L('state',v=>{
     const prev=fb.state;fb.state=v;
     if(loaded.state)Object.entries(v).forEach(([id,s])=>{
@@ -704,20 +756,23 @@ function setupListeners(){
   L('custom',v=>{fb.custom=v;rebuildItems();renderAll();});
   L('overrides',v=>{fb.overrides=v;rebuildItems();renderAll();});
   L('enroll',v=>{fb.enroll=v;renderAll();});
-  db.ref(`${P}/log`).limitToLast(120).on('value',s=>{
+  sub$(db.ref(`${P}/log`).limitToLast(120),s=>{
     fb.log=Object.values(s.val()||{}).sort((a,b)=>(b.ts||0)-(a.ts||0));
     updateBadge();if(tab==='log')renderAll();
   },e=>dbFail(e,'log'));
-  db.ref('t5/presence').on('value',s=>{fb.presence=s.val()||{};renderPresence();},()=>{});
+  sub$(db.ref(`${RP()}/presence`),s=>{fb.presence=s.val()||{};renderPresence();},()=>{});
+  sub$(db.ref(`${RP()}/qlist`),s=>{QLIST=s.val()||{};},()=>{});
+}
+function watchConnection(){
   // Connected only means the socket is up. It does NOT mean reads are allowed (a locked database still "connects").
-  db.ref('.info/connected').on('value',s=>{if(dbStatus==='locked')return;if(s.val()){if(dbStatus==='offline')setDb('live');heartbeat();}else if(dbStatus==='live')setDb('offline');});
+  db.ref('.info/connected').on('value',s=>{if(dbStatus==='locked'||dbStatus==='gate')return;if(s.val()){if(dbStatus==='offline')setDb('live');heartbeat();}else if(dbStatus==='live')setDb('offline');});
 }
 function setDb(st,path){dbStatus=st;if(path)dbErrPath=path;renderAll();}
 function dbFail(e,path){console.error('Firebase refused',path,e);setDb(/permission/i.test(String(e&&(e.code||e.message)))?'locked':'offline',path);}
 window.addEventListener('unhandledrejection',e=>{const m=String(e.reason&&(e.reason.code||e.reason.message)||e.reason);if(/permission/i.test(m)){e.preventDefault();dbFail(e.reason,'write');toast('Not saved: the team database is locked','terr');}});
 function heartbeat(){
-  if(!me||!db)return;const m=memOf(me)||{};
-  const ref=db.ref(`t5/presence/${uk(me)}`);
+  if(!me||!db||!ROOM)return;const m=memOf(me)||{};
+  const ref=db.ref(`${RP()}/presence/${uk(me)}`);
   ref.set({name:me,bg:m.bg||'#555',cl:m.cl||'#fff',online:true,ts:TS()});
   ref.onDisconnect().update({online:false,ts:TS()});
 }
@@ -779,10 +834,10 @@ function renderStrip(){
   const teamOpen=ALL.filter(x=>isTeam(x)&&!fb.state[x.id]?.done&&dayDiff(x.due)<=7).length;
   const nx=allMeetings().filter(m=>!m.cancelled&&m.end>Date.now())[0];
   const on=[...onlineNames()];
-  const sync={loading:['warn','Connecting'],live:['good','Synced live'],offline:['warn','Offline, changes will sync later'],locked:['bad','Team database locked'],nosdk:['bad','Sync blocked by this network']}[dbStatus];
+  const sync={gate:['warn','Enter the team code'],loading:['warn','Connecting'],live:['good','Synced live'],offline:['warn','Offline, changes will sync later'],locked:['bad','Team database locked'],nosdk:['bad','Sync blocked by this network']}[dbStatus];
   const c=[];
   c.push(`<span class="st-chip" title="Sync status"><span class="dot ${sync[0]}"></span>${sync[1]}</span>`);
-  c.push(`<button class="st-chip" onclick="goWk(${cw})"><span class="dot acc"></span>Week <b>${cw}</b> of 10</button>`);
+  c.push(`<button class="st-chip" onclick="goWk(${cw})"><span class="dot acc"></span>Week <b>${cw}</b> of ${NW()}</button>`);
   if(me){
     if(over)c.push(`<button class="st-chip" onclick="sw('upcoming')"><span class="dot bad"></span><b>${over}</b> overdue</button>`);
     c.push(`<button class="st-chip" onclick="sw('upcoming')"><span class="dot ${soon?'warn':'good'}"></span><b>${soon}</b> due in 7 days</button>`);
@@ -844,7 +899,7 @@ function openMeet(w,key){
   showModal('meet-modal');
 }
 function saveMeet(){
-  if(!me)return needName();
+  if(!ready())return;
   const w=document.getElementById('meet-w').value,key=document.getElementById('meet-key').value||('x'+Date.now());
   const d={label:document.getElementById('meet-label').value.trim()||'Team meeting',date:document.getElementById('meet-date').value,time:document.getElementById('meet-time').value,dur:+document.getElementById('meet-dur').value};
   if(!d.date||!d.time){toast('Pick a date and start time','terr');return;}
@@ -861,6 +916,205 @@ function cancelMeet(flag){
 function resetMeet(){
   const w=document.getElementById('meet-w').value,key=document.getElementById('meet-key').value;
   db.ref(`${P}/meetings/w${w}/${key}`).remove();closeModal('meet-modal');toast('Done','tok');
+}
+
+
+/* ================= TEAM ROOM (passcode lock) =================
+   The team code never leaves the browser. It is stretched with PBKDF2 into a 64-hex room id,
+   and all data lives under rooms/<id>. The database rules deny listing rooms/, so without the
+   code nobody can find the data. The page source contains neither the code nor the id. */
+let QLIST={},qSub=null;
+async function roomFor(code){
+  const norm=String(code).trim().toLowerCase().replace(/\s+/g,' ');
+  const enc=new TextEncoder();
+  const key=await crypto.subtle.importKey('raw',enc.encode(norm),'PBKDF2',false,['deriveBits']);
+  const bits=await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode('team5tracker-room-v1'),iterations:150000,hash:'SHA-256'},key,256);
+  return [...new Uint8Array(bits)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function gateMsg(t,bad){const el=document.getElementById('gate-msg');el.textContent=t||'';el.style.color=bad?'var(--red)':'var(--t3)';}
+function openGate(msg){dbStatus='gate';showModal('gate');gateMsg(msg||'',!!msg);setTimeout(()=>document.getElementById('gate-code').focus(),50);renderAll();}
+async function unlock(){
+  const code=document.getElementById('gate-code').value;if(!code.trim())return;
+  gateMsg('Checking the code...');
+  try{
+    const r=await roomFor(code);
+    const m=(await db.ref(`rooms/${r}/meta`).once('value')).val();
+    if(m){localStorage.setItem('t5_room',r);closeModal('gate');document.getElementById('gate-code').value='';await enterRoom(r);return;}
+    gateMsg('That code doesn’t match the team. Check it with Tyler and try again.',true);
+  }catch(e){gateMsg(/permission/i.test(String(e&&(e.code||e.message)))?'The database refused the request. Its rules may need updating.':'Could not reach the database. Check your connection.',true);}
+}
+async function createRoom(){
+  const c1=document.getElementById('gate-code').value,c2=document.getElementById('gate-code2').value;
+  if(c1.trim().length<10){gateMsg('Use at least 10 characters. A short phrase works well.',true);return;}
+  if(c1!==c2){gateMsg('The two codes don’t match.',true);return;}
+  gateMsg('Creating the team room...');
+  try{
+    const r=await roomFor(c1);
+    if((await db.ref(`rooms/${r}/meta`).once('value')).val()){gateMsg('A team already uses that code. Unlocking instead.');return unlock();}
+    let legacy=null;try{legacy=(await db.ref('t5q4').once('value')).val();}catch(e){}
+    const data={meta:{created:TS(),v:1}};if(legacy)data.t5q4=legacy;
+    await db.ref(`rooms/${r}`).set(data);
+    if(legacy){ // verify the copy before anyone relies on it
+      const back=(await db.ref(`rooms/${r}/t5q4`).once('value')).val()||{};
+      const a=Object.keys(legacy).sort().join(),b=Object.keys(back).sort().join();
+      if(a!==b){gateMsg('The copy did not verify. Nothing was lost; the old data is untouched. Try again.',true);return;}
+    }
+    localStorage.setItem('t5_room',r);closeModal('gate');
+    toast(legacy?'Team room created. Current data moved in and verified.':'Team room created.','tok');
+    await enterRoom(r);
+  }catch(e){gateMsg('Could not create the room: '+(e.message||e),true);}
+}
+async function enterRoom(r){
+  ROOM=r;dbStatus='loading';
+  if(qSub)qSub.off('value');
+  qSub=db.ref(`${RP()}/current`);
+  qSub.on('value',async s=>{await loadQuarter(s.val());},e=>dbFail(e,'current'));
+  heartbeat();
+  if(!me)openPicker();
+}
+function forgetCode(){if(!confirm('Forget the team code on this device? You will need to enter it again.'))return;localStorage.removeItem('t5_room');location.reload();}
+
+/* ================= QUARTERS ================= */
+function notesKey(){return QCFG&&QCFG.id!=='t5q4'?`t5_notes_${QCFG.id}`:'t5q4_notes';}
+async function loadQuarter(id){
+  let cfg=QA;
+  if(id&&id!=='t5q4'){
+    try{const v=(await db.ref(`${RP()}/quarters/${id}`).once('value')).val();if(v&&v.items&&v.weeks)cfg={...v,id};else toast('That quarter could not be loaded. Showing Autumn 2026.','terr');}
+    catch(e){dbFail(e,'quarters');}
+  }
+  applyQuarter(cfg);
+}
+function applyQuarter(cfg){
+  QCFG=cfg;
+  WEEKS=Object.values(cfg.weeks);
+  COURSES={...cfg.courses};if(!COURSES.OTHER)COURSES.OTHER={s:'Other',k:'other',full:'Other',core:true};
+  ITEMS=Object.values(cfg.items||{});
+  ELECTIVES=Object.keys(COURSES).filter(c=>!COURSES[c].core);
+  P=`${RP()}/${cfg.id}`;
+  Object.assign(fb,{state:{},personal:{},comments:{},links:{},blocked:{},grades:{},ratings:{},polls:{},settings:{},announce:{},leadernotes:{},meetings:{},custom:{},overrides:{},enroll:{},log:[]});
+  loaded.state=loaded.personal=false;celebBase=null;
+  try{privNotes=JSON.parse(localStorage.getItem(notesKey())||'{}');}catch(e){privNotes={};}
+  if(prefs.course!=='all'&&!COURSES[prefs.course])prefs.course='all';
+  curW=detectWeek();
+  document.title=`Team 5 Tracker | ${cfg.label}`;
+  document.getElementById('qlabel').textContent=`Hybrid MBA · ${cfg.label}`;
+  rebuildItems();setupListeners();renderAll();
+}
+async function switchQuarter(id){
+  if(!ready())return;
+  const label=id==='t5q4'?QA.label:(QLIST[id]||{}).label||id;
+  if(!confirm(`Switch the whole team to ${label}?`))return;
+  await db.ref(`${RP()}/current`).set(id);logAct(`switched the tracker to ${label}`,'');closeModal('set-modal');
+}
+
+/* ================= BACKUP ================= */
+function download(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();}
+async function exportBackup(silent){
+  if(!ready())return;
+  const v=(await db.ref(RP()).once('value')).val();
+  const out={type:'team5-tracker-backup',exported:new Date().toISOString(),by:me,data:v};
+  download(new Blob([JSON.stringify(out,null,1)],{type:'application/json'}),`team5-backup-${todayStr()}.json`);
+  if(!silent)toast('Backup downloaded. Keep it somewhere private; it includes grades.','tok');
+}
+async function restoreBackup(file){
+  if(!file||!ready())return;
+  let j;try{j=JSON.parse(await file.text());}catch(e){toast('That file is not valid JSON','terr');return;}
+  if(!j||j.type!=='team5-tracker-backup'||!j.data||!j.data.meta){toast('That is not a Team 5 tracker backup','terr');return;}
+  if(prompt(`Restore replaces ALL team data with the backup from ${new Date(j.exported).toLocaleString()}. A backup of the current data downloads first. Type RESTORE to continue.`)!=='RESTORE'){toast('Nothing was restored','twarn');return;}
+  await exportBackup(true);
+  await db.ref(RP()).set(j.data);
+  toast('Restored. Reloading...','tok');setTimeout(()=>location.reload(),900);
+}
+
+/* ================= IMPORT A QUARTER FROM A SPREADSHEET ================= */
+let IMP=null;
+const PALETTE=['strat','macro','ma','cons','mktg','p6','p7','p8'];
+function openImport(){if(!ready())return;IMP=null;document.getElementById('imp-file').value='';document.getElementById('imp-preview').innerHTML='';document.getElementById('imp-go').disabled=true;showModal('imp-modal');}
+async function onImpFile(f){
+  if(!f)return;const pv=document.getElementById('imp-preview');pv.innerHTML='<div class="hint">Reading the file...</div>';
+  try{
+    if(!window.XLSX)await loadScript('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+    const wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+    IMP=parseWorkbook(wb);renderImport();
+  }catch(e){pv.innerHTML=`<div class="hint" style="color:var(--red);">Could not read that file: ${esc(e.message||e)}</div>`;}
+}
+function toYmd(v){
+  if(v==null||v==='')return null;
+  if(typeof v==='number'){const d=XLSX.SSF.parse_date_code(v);return d?`${d.y}-${pad(d.m)}-${pad(d.d)}`:null;}
+  if(v instanceof Date)return `${v.getFullYear()}-${pad(v.getMonth()+1)}-${pad(v.getDate())}`;
+  const s=String(v).trim(),m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;
+  const d=new Date(s);return isNaN(d)?null:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+function parseWorkbook(wb){
+  const out={items:[],courses:{},sheets:0,rows:0,dupes:0,skipped:0,nodue:0};
+  const seen=new Set(),cnt={};
+  wb.SheetNames.forEach(sn=>{
+    const a=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});if(!a.length)return;
+    const hdr=(a[0]||[]).map(h=>String(h??'').trim().toLowerCase()),ix=n=>hdr.indexOf(n);
+    const cC=ix('course code'),cA=ix('assignment'),cD=ix('due');if(cC<0||cA<0||cD<0)return;
+    out.sheets++;const cS=ix('course'),cM=ix('module'),cG=ix('graded'),cT=ix('team');
+    a.slice(1).forEach(r=>{
+      const code=r[cC]==null?'':String(r[cC]).trim();let name=r[cA]==null?'':String(r[cA]);
+      if(!code||!name.trim())return;out.rows++;
+      name=name.replace(/Links to an external site\.?/g,'').replace(/\s*\n+\s*/g,' / ').replace(/\s+/g,' ').trim();
+      if(/is locked/i.test(name)){out.skipped++;return;}
+      const due=toYmd(r[cD]);if(!due){out.nodue++;return;}
+      const key=`${code}|${name.toLowerCase()}|${due}`;if(seen.has(key)){out.dupes++;return;}seen.add(key);
+      const g={Y:'Y',N:'N',OPTIONAL:'O'}[String(cG>=0?r[cG]??'':'').trim().toUpperCase()]||'N';
+      const ts=String(cT>=0?r[cT]??'':'').toLowerCase().trim();
+      let t=ts==='team'?'team':ts.includes('classmate')?'pair':null;if(/\(individual\)/i.test(name))t=null;
+      const m=parseInt(cM>=0?r[cM]:0)||0,pfx=code.replace(/[^A-Za-z0-9]/g,'').toLowerCase().slice(0,7)||'x';
+      cnt[pfx+m]=(cnt[pfx+m]||0)+1;
+      out.items.push({id:`${pfx}${m}_${pad(cnt[pfx+m])}`,c:code,m,n:name,g,t,due});
+      if(!out.courses[code])out.courses[code]={s:cS>=0&&r[cS]?String(r[cS]).trim():code};
+    });
+  });
+  out.items.sort((a,b)=>a.due<b.due?-1:a.due>b.due?1:(a.c<b.c?-1:1));
+  let pi=0;Object.entries(out.courses).forEach(([code,c])=>{
+    const known=COURSES_A[code];c.full=known?known.full:c.s;c.k=known?known.k:PALETTE[(pi++)%PALETTE.length];c.core=known?!!known.core:false;
+  });
+  if(out.items.length){
+    out.first=out.items[0].due;out.last=out.items[out.items.length-1].due;
+    const dow=(dayNum(out.first)+4)%7;out.start=addDays(out.first,-((dow+6)%7));   // Monday on/before the first due date
+    const mo=+out.first.slice(5,7),yr=out.first.slice(0,4);
+    out.label=`${mo<=3?'Winter':mo<=6?'Spring':mo<=8?'Summer':'Autumn'} ${yr}`;
+  }
+  return out;
+}
+function renderImport(){
+  const x=IMP,pv=document.getElementById('imp-preview'),go=document.getElementById('imp-go');
+  if(!x.sheets){pv.innerHTML='<div class="hint" style="color:var(--red);">No tabs with the columns Course Code, Assignment, and Due were found.</div>';go.disabled=true;return;}
+  if(!x.items.length){pv.innerHTML='<div class="hint" style="color:var(--red);">The file was read, but no assignments had a due date.</div>';go.disabled=true;return;}
+  const per=Object.keys(x.courses).map(c=>{const it=x.items.filter(i=>i.c===c);return `<tr><td><label style="cursor:pointer;display:flex;gap:8px;align-items:center;"><input type="checkbox" data-core="${esc(c)}" ${x.courses[c].core?'checked':''} style="accent-color:var(--accent);"/><span class="cb k-${x.courses[c].k}">${esc(x.courses[c].s)}</span></label></td><td>${esc(c)}</td><td style="text-align:right;">${it.length}</td><td style="text-align:right;">${it.filter(i=>i.g==='Y').length}</td><td style="text-align:right;">${it.filter(i=>i.t==='team').length}</td></tr>`;}).join('');
+  pv.innerHTML=`<div class="sg" style="margin-top:12px;">
+    <div class="hint" style="margin:0 0 8px;">Read ${x.sheets} tab${x.sheets>1?'s':''} and ${x.rows} rows. Kept <b>${x.items.length}</b> assignments due ${fmtDay(x.first,{month:'short',day:'numeric'})} to ${fmtDay(x.last,{month:'short',day:'numeric'})}. Removed ${x.dupes} duplicate${x.dupes===1?'':'s'}${x.skipped?`, skipped ${x.skipped} locked module row${x.skipped>1?'s':''}`:''}${x.nodue?`, skipped ${x.nodue} with no due date`:''}.</div>
+    <div style="overflow-x:auto;"><table style="width:100%;font-size:13px;border-collapse:collapse;"><tr style="color:var(--t3);text-align:left;"><th style="font-weight:500;">Core course? (whole team takes it)</th><th style="font-weight:500;">Code</th><th style="font-weight:500;text-align:right;">Items</th><th style="font-weight:500;text-align:right;">Graded</th><th style="font-weight:500;text-align:right;">Team</th></tr>${per}</table></div>
+  </div>
+  <div class="sg">
+    <div class="sg-r"><span class="sg-l">Quarter name</span><input class="inp" id="imp-label" value="${esc(x.label)}"/></div>
+    <div class="sg-r"><span class="sg-l">Week 1 starts (Monday)</span><input type="date" class="inp" id="imp-start" value="${x.start}"/></div>
+    <div class="sg-r"><span class="sg-l">Number of weeks</span><input type="number" class="inp num" id="imp-nw" min="1" max="16" value="10"/></div>
+    <div class="hint">Anything due after the last week counts toward the last week. Settings like meeting times and the Teams link carry over; electives are picked fresh.</div>
+  </div>`;
+  go.disabled=false;
+}
+async function createQuarter(){
+  if(!IMP||!ready())return;
+  const label=document.getElementById('imp-label').value.trim()||IMP.label,start=document.getElementById('imp-start').value,nw=Math.max(1,Math.min(16,+document.getElementById('imp-nw').value||10));
+  if(!start){toast('Pick the Monday week 1 starts','terr');return;}
+  const id=label.toLowerCase().replace(/[^a-z0-9]+/g,'');
+  if(!id||id==='t5q4'||QLIST[id]){if(!confirm(`A quarter called ${label} already exists. Replace its assignment list? Checkmarks and comments are kept.`))return;}
+  const weeks=[];for(let i=0;i<nw;i++)weeks.push({n:i+1,s:addDays(start,7*i),e:addDays(start,7*i+6)});
+  if(IMP.last>weeks[nw-1].e)weeks[nw-1].e=IMP.last;
+  const courses={};Object.entries(IMP.courses).forEach(([c,v])=>{courses[c]={...v,core:!!document.querySelector(`[data-core="${CSS.escape(c)}"]`)?.checked};});
+  const cfg={id,label,weeks,courses,items:IMP.items,created:TS(),by:me};
+  await db.ref(`${RP()}/quarters/${id}`).set(cfg);
+  await db.ref(`${RP()}/qlist/${id}`).set({label,created:TS(),items:IMP.items.length});
+  const keep={...fb.settings};delete keep.leaderStart;
+  await db.ref(`${RP()}/${id}/settings`).update(keep);
+  logAct(`loaded ${label} (${IMP.items.length} assignments)`,'');
+  await db.ref(`${RP()}/current`).set(id);
+  closeModal('imp-modal');closeModal('set-modal');toast(`${label} is live for the team`,'tok');
 }
 
 /* ================= RENDER CORE ================= */
@@ -1040,7 +1294,7 @@ function rUpcoming(){
 }
 
 function rWeek(){
-  const w=curW,m=lead(w),nextL=w<10?lead(w+1):null,isLeader=me===m.name;
+  const w=curW,m=lead(w),nextL=w<NW()?lead(w+1):null,isLeader=me===m.name;
   const items=ALL.filter(x=>x.w===w&&vis(x));
   const key=ALL.filter(x=>x.w===w&&isKey(x)&&courseOk(x)),kd=key.filter(myDone).length;
   const tItems=key.filter(isTeam),tDone=tItems.filter(x=>fb.state[x.id]?.done).length;
@@ -1060,7 +1314,7 @@ function rWeek(){
   return `<div class="wnav-row">
     <button class="nb" onclick="chW(-1)" ${w<=1?'disabled':''} aria-label="Previous week">←</button>
     <div class="wtitle">Week ${w}<span class="wrange">${rangeLbl(w)}</span></div>
-    <button class="nb" onclick="chW(1)" ${w>=10?'disabled':''} aria-label="Next week">→</button>
+    <button class="nb" onclick="chW(1)" ${w>=NW()?'disabled':''} aria-label="Next week">→</button>
   </div>
   <div class="wk-grid">
     <div class="wk-side">
@@ -1125,7 +1379,7 @@ function rSched(){
         <div class="prog-sm"><div class="pf${p===100?' full':''}" style="width:${p}%;height:100%;"></div></div>
       </div></div>`;
   }).join('');
-  return `<div class="sec"><div class="sechd"><span>Autumn 2026, ten weeks. Meeting times in ${TZL[teamTz()]}; This Week shows every time zone.</span><div class="acts"><button class="nbtn" onclick="exportICS()">📅 Add to my calendar (.ics)</button></div></div><div class="card">${rows}</div></div>`;
+  return `<div class="sec"><div class="sechd"><span>${esc(QCFG?QCFG.label:QA.label)}, ${NW()} weeks. Meeting times in ${TZL[teamTz()]}; This Week shows every time zone.</span><div class="acts"><button class="nbtn" onclick="exportICS()">📅 Add to my calendar (.ics)</button></div></div><div class="card">${rows}</div></div>`;
 }
 
 function rAll(){
@@ -1178,7 +1432,7 @@ function rPolls(){
 
 function rGuide(){
   const R=(i,l,d)=>`<div class="grow"><div class="gicon">${i}</div><div><div class="glabel">${l}</div><div class="gdesc">${d}</div></div></div>`;
-  return `<div class="gsec"><h3>What’s new for Autumn 2026</h3>
+  return `<div class="gsec"><h3>What’s new this quarter</h3>
     ${R('🎓','Core and electives','Team 5 shares two core courses: Strategy (MGMT 502) and Macro (ECON 501). Everything else is an elective. Click “My electives” once to pick yours, and you only see those.')}
     ${R('🎨','Color by course','Each course has a color. Use the chips above the tabs to show one course at a time.')}
     ${R('☑️','Your own checkboxes','Individual work (problem sets, discussions, readings) now has a checkbox per person, so checking off your problem set no longer checks it for everyone. Only Team 5 deliverables in Strategy and Macro share one checkbox. Group work in an elective is with a different team, so everyone checks their own. The avatars on each row show who has finished.')}
@@ -1216,6 +1470,11 @@ function rGuide(){
     ${R('⚠️','“Sync blocked by this network”','A VPN, ad blocker, or in-app preview is blocking Google’s script servers. The tracker also tries a second server. Open it in a normal browser tab.')}
     ${R('✏️','A due date is wrong','Open the item with ⋯ and choose Edit date or name. It changes for everyone and shows an Edited tag.')}
   </div>
+  <div class="gsec"><h3>Team code, backups, and new quarters</h3>
+    ${R('🔐','Team code','The data is locked to a team code. Enter it once per device. Without it, the data can’t be found, even by someone who reads the page source.')}
+    ${R('💾','Backups','Settings, Download a backup saves everything to a file. Resetting a quarter downloads one automatically first.')}
+    ${R('📥','New quarter','Settings, Load a new quarter: upload the assignment spreadsheet, check which courses are core, confirm. Everyone switches over, and old quarters stay saved.')}
+  </div>
   <div class="gsec"><h3>Keyboard</h3><div class="gdesc" style="line-height:2.2;">
     <span class="kbd">/</span> search &nbsp; <span class="kbd">U</span> Upcoming &nbsp; <span class="kbd">W</span> This Week &nbsp; <span class="kbd">M</span> My Tasks &nbsp; <span class="kbd">S</span> Schedule &nbsp; <span class="kbd">A</span> All Work &nbsp; <span class="kbd">L</span> Activity &nbsp; <span class="kbd">← →</span> change week &nbsp; <span class="kbd">R</span> readings on or off &nbsp; <span class="kbd">D</span> dark or light
   </div></div>`;
@@ -1223,7 +1482,7 @@ function rGuide(){
 
 /* ================= ACTIONS ================= */
 function tog(id){
-  if(!me){needName();renderAll();return;}
+  if(!ready()){renderAll();return;}
   const x=BYID[id];if(!x)return;
   const was=myDone(x);
   if(isTeam(x)){
@@ -1239,7 +1498,7 @@ function tog(id){
   checkCelebration();renderAll();
 }
 function markWeek(w){
-  if(!me)return needName();
+  if(!ready())return;
   const list=ALL.filter(x=>x.w===w&&vis(x)&&!myDone(x));
   if(!list.length)return;
   if(!confirm(`Mark ${list.length} item${list.length>1?'s':''} done? Team items will be checked for everyone.`))return;
@@ -1249,7 +1508,7 @@ function markWeek(w){
   toast(`Marked ${list.length} done`,'tok');
 }
 function cycleStatus(id){
-  if(!me)return needName();
+  if(!ready())return;
   const s=fb.state[id]||{},nx={todo:'working',working:'review',review:'todo'}[s.status||'todo'];
   db.ref(`${P}/state/${id}`).update({status:nx,statusBy:me,statusTs:TS()});
   logAct(`set ${{todo:'Not started',working:'In progress',review:'Needs review'}[nx]} on`,id);
@@ -1257,13 +1516,13 @@ function cycleStatus(id){
 function toggleOpen(id){open[id]=!open[id];if(!open[id])subOpen[id]=null;renderAll();if(open[id])setTimeout(()=>document.getElementById('ci_'+id)?.focus({preventScroll:true}),60);}
 function sub(id,k){subOpen[id]=subOpen[id]===k?null:k;renderAll();setTimeout(()=>{const el=document.getElementById({link:'li_',grade:'gs_',note:'pn_',edit:'ed_'}[k]+id);el&&el.focus();},60);}
 function setOwner(id,name){
-  if(!me)return needName();
+  if(!ready())return;
   db.ref(`${P}/state/${id}`).update({owner:name||null});
   if(name)logAct(`made ${first(name)} owner of`,id);
   subOpen[id]=null;
 }
 function saveLink(id){
-  if(!me)return needName();
+  if(!ready())return;
   let url=document.getElementById('li_'+id).value.trim();const label=document.getElementById('ll_'+id).value.trim();
   if(!url)return delLink(id);
   if(!/^https?:\/\//i.test(url))url='https://'+url;
@@ -1272,7 +1531,7 @@ function saveLink(id){
 }
 function delLink(id){db.ref(`${P}/links/${id}`).remove();subOpen[id]=null;renderAll();}
 function toggleBlocked(id){
-  if(!me)return needName();
+  if(!ready())return;
   const b=fb.blocked[id];
   if(b){db.ref(`${P}/blocked/${id}`).remove();logAct(b.by===me?'got unstuck on':`resolved ${first(b.by)}’s block on`,id);toast('Marked resolved','tok');}
   else{db.ref(`${P}/blocked/${id}`).set({by:me,ts:TS()});logAct('is stuck on',id);toast('Flagged. Anyone online gets an alert.','twarn');open[id]=true;}
@@ -1285,22 +1544,22 @@ function saveGrade(id){
   subOpen[id]=null;toast(`Saved ${sc}/${mx}`,'tok');
 }
 function delGrade(id){const x=BYID[id];db.ref(`${P}/grades/${id}/${isTeam(x)?'team':uk(me)}`).remove();subOpen[id]=null;}
-function setRating(id,n){if(!me)return needName();const r=db.ref(`${P}/ratings/${id}/${uk(me)}`);if(ratingInfo(BYID[id]).mine===n)r.remove();else r.set(n);}
-function savePrivNote(id){const t=document.getElementById('pn_'+id).value.trim();if(t)privNotes[id]=t;else delete privNotes[id];localStorage.setItem('t5q4_notes',JSON.stringify(privNotes));subOpen[id]=null;renderAll();toast('Note saved on this device','tok');}
-function delPrivNote(id){delete privNotes[id];localStorage.setItem('t5q4_notes',JSON.stringify(privNotes));subOpen[id]=null;renderAll();}
+function setRating(id,n){if(!ready())return;const r=db.ref(`${P}/ratings/${id}/${uk(me)}`);if(ratingInfo(BYID[id]).mine===n)r.remove();else r.set(n);}
+function savePrivNote(id){const t=document.getElementById('pn_'+id).value.trim();if(t)privNotes[id]=t;else delete privNotes[id];localStorage.setItem(notesKey(),JSON.stringify(privNotes));subOpen[id]=null;renderAll();toast('Note saved on this device','tok');}
+function delPrivNote(id){delete privNotes[id];localStorage.setItem(notesKey(),JSON.stringify(privNotes));subOpen[id]=null;renderAll();}
 function submitComment(id){
-  if(!me)return needName();
+  if(!ready())return;
   const el=document.getElementById('ci_'+id),t=el.value.trim();if(!t)return;
   db.ref(`${P}/comments/${id}`).push({text:t,by:me,ts:TS()});
   el.value='';delete el.dataset.dirty;logAct('commented on',id);
 }
 function delComment(id,cid){db.ref(`${P}/comments/${id}/${cid}`).remove();}
-function chW(d){curW=Math.max(1,Math.min(10,curW+d));renderAll();}
+function chW(d){curW=Math.max(1,Math.min(NW(),curW+d));renderAll();}
 function goWk(w){curW=w;sw('week');}
 
 /* Team corrections to the baked-in list */
 function saveEdit(id){
-  if(!me)return needName();
+  if(!ready())return;
   const x=BYID[id],n=document.getElementById('en_'+id).value.trim(),due=document.getElementById('ed_'+id).value;
   if(!n||!due){toast('Name and date are both needed','terr');return;}
   const base=x.orig||{n:x.n,due:x.due};
@@ -1311,12 +1570,12 @@ function saveEdit(id){
   subOpen[id]=null;toast('Updated for the team','tok');
 }
 function clearEdit(id){db.ref(`${P}/overrides/${id}`).remove();subOpen[id]=null;toast('Back to the original','tok');}
-function hideItem(id){if(!me)return needName();if(!confirm('Remove this from the tracker for everyone? You can restore it from All Work.'))return;db.ref(`${P}/overrides/${id}`).update({hidden:true,by:me,ts:TS()});logAct('removed from the tracker:',id);open[id]=false;}
+function hideItem(id){if(!ready())return;if(!confirm('Remove this from the tracker for everyone? You can restore it from All Work.'))return;db.ref(`${P}/overrides/${id}`).update({hidden:true,by:me,ts:TS()});logAct('removed from the tracker:',id);open[id]=false;}
 function unhideItem(id){db.ref(`${P}/overrides/${id}/hidden`).remove();}
 
 /* Electives */
 function openElectives(){
-  if(!me)return needName();
+  if(!ready())return;
   const e=enrollOf(me)||{};
   document.getElementById('elec-list').innerHTML=ELECTIVES.map(c=>`<label class="sg-r" style="cursor:pointer;"><input type="checkbox" value="${esc(c)}" ${e[c]?'checked':''} style="accent-color:var(--accent);width:17px;height:17px;"/><span class="cb k-${crs(c).k}">${esc(crs(c).s)}</span><span class="sg-l">${esc(c==='MKTG'?'Marketing Analytics':c+' '+crs(c).full)}</span></label>`).join('');
   const who=ELECTIVES.map(c=>{const r=roster(c);return r.length?`${crs(c).s}: ${r.map(m=>first(m.name)).join(', ')}`:'';}).filter(Boolean);
@@ -1332,7 +1591,7 @@ function saveElectives(){
 
 /* Custom assignments */
 function openCustom(){
-  if(!me)return needName();
+  if(!ready())return;
   document.getElementById('cust-c').innerHTML=Object.entries(COURSES).map(([c,k])=>`<option value="${esc(c)}">${c==='OTHER'?'Other':esc(c)} ${esc(k.full)}</option>`).join('');
   document.getElementById('cust-c').value=ELECTIVES.find(c=>takes(me,c)===true&&c!=='FIN 558')||'MGMT 502';
   document.getElementById('cust-n').value='';
@@ -1374,19 +1633,19 @@ function icsEsc(s){return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').re
 function icsUtc(d){return d.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';}
 function fold(l){const o=[];while(l.length>74){o.push(l.slice(0,74));l=' '+l.slice(74);}o.push(l);return o.join('\r\n');}
 function exportICS(){
-  const stamp=icsUtc(new Date()),L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Team5//Tracker//EN','CALSCALE:GREGORIAN','X-WR-CALNAME:Team 5 Autumn 2026'];
+  const stamp=icsUtc(new Date()),L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Team5//Tracker//EN','CALSCALE:GREGORIAN',`X-WR-CALNAME:Team 5 ${(QCFG||QA).label}`];
   ALL.filter(x=>isKey(x)&&mine(x)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`${crs(x.c).s}: ${x.n}${isTeam(x)?' (Team)':''}`)}`,`DESCRIPTION:${icsEsc(`${x.c}. Due 11:59 PM PT. ${SITE}`)}`,'TRANSP:TRANSPARENT','END:VEVENT'));
   ALL.filter(x=>isLive(x)&&mine(x)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`Foster Live: ${crs(x.c).s}`)}`,`DESCRIPTION:${icsEsc('Session time is on Canvas.')}`,'END:VEVENT'));
   allMeetings().filter(m=>!m.cancelled).forEach(m=>L.push('BEGIN:VEVENT',`UID:w${m.w}-${m.key}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART:${icsUtc(m.start)}`,`DTEND:${icsUtc(m.end)}`,`SUMMARY:${icsEsc('Team 5: '+m.label)}`,...(fb.settings.meetLink?[`LOCATION:${icsEsc('Microsoft Teams')}`,`DESCRIPTION:${icsEsc('Join: '+fb.settings.meetLink)}`]:[]),'END:VEVENT'));
   L.push('END:VCALENDAR');
   const blob=new Blob([L.map(fold).join('\r\n')],{type:'text/calendar'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='team5-autumn-2026.ics';document.body.appendChild(a);a.click();a.remove();
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`team5-${(QCFG||QA).id}.ics`;document.body.appendChild(a);a.click();a.remove();
   toast('Calendar file downloaded','tok');
 }
 
 /* Polls */
 function optRow(){return `<div class="panel" style="margin:0 0 6px;"><input class="inp grow" placeholder="Option"/><button class="nbtn danger" onclick="this.parentElement.remove()" aria-label="Remove option">✕</button></div>`;}
-function openPollModal(){if(!me)return needName();document.getElementById('poll-q').value='';document.getElementById('poll-opts').innerHTML=optRow()+optRow();showModal('poll-modal');}
+function openPollModal(){if(!ready())return;document.getElementById('poll-q').value='';document.getElementById('poll-opts').innerHTML=optRow()+optRow();showModal('poll-modal');}
 function addPollOpt(){document.getElementById('poll-opts').insertAdjacentHTML('beforeend',optRow());}
 function savePoll(){
   const q=document.getElementById('poll-q').value.trim(),opts=[...document.querySelectorAll('#poll-opts input')].map(i=>i.value.trim()).filter(Boolean);
@@ -1394,19 +1653,19 @@ function savePoll(){
   db.ref(`${P}/polls/p${Date.now()}`).set({q,opts,by:me,ts:TS()});
   logAct('started a poll:','');closeModal('poll-modal');toast('Poll posted','tok');
 }
-function votePoll(pid,i){if(!me)return needName();const r=db.ref(`${P}/polls/${pid}/votes/${uk(me)}`);if((fb.polls[pid]?.votes||{})[uk(me)]===i)r.remove();else r.set(i);}
+function votePoll(pid,i){if(!ready())return;const r=db.ref(`${P}/polls/${pid}/votes/${uk(me)}`);if((fb.polls[pid]?.votes||{})[uk(me)]===i)r.remove();else r.set(i);}
 function deletePoll(pid){if(confirm('Delete this poll?'))db.ref(`${P}/polls/${pid}`).remove();}
 
 /* Announcement + leader notes */
 function openAnnouncement(){document.getElementById('ann-input').value=fb.announce.text||'';showModal('ann-modal');}
-function saveAnnouncement(){if(!me)return needName();const t=document.getElementById('ann-input').value.trim();if(!t)return clearAnnouncement();db.ref(`${P}/announce`).set({text:t,by:me,ts:TS()});closeModal('ann-modal');toast('Pinned for the team','tok');}
+function saveAnnouncement(){if(!ready())return;const t=document.getElementById('ann-input').value.trim();if(!t)return clearAnnouncement();db.ref(`${P}/announce`).set({text:t,by:me,ts:TS()});closeModal('ann-modal');toast('Pinned for the team','tok');}
 function clearAnnouncement(){db.ref(`${P}/announce`).remove();closeModal('ann-modal');}
 function openLeaderNotes(){document.getElementById('ln-title').textContent=`Leader notes, week ${curW}`;document.getElementById('ln-input').value=fb.leadernotes['w'+curW]?.text||'';showModal('ln-modal');}
 function saveLeaderNotes(){db.ref(`${P}/leadernotes/w${curW}`).set({text:document.getElementById('ln-input').value.trim(),by:me,ts:TS()});closeModal('ln-modal');toast('Notes saved','tok');}
 
 /* Picker, theme, settings */
 function buildPicker(){document.getElementById('pgrid').innerHTML=MEM.map(m=>`<button class="pbtn" onclick="pickMe('${esc(m.name)}')">${av(m,32)}${esc(m.name)}</button>`).join('');}
-function openPicker(){showModal('picker');}
+function openPicker(){if(document.getElementById('gate').classList.contains('show'))return;showModal('picker');}
 function pickMe(n){me=n;savePrefs();closeModal('picker');updateYou();heartbeat();celebBase=null;checkCelebration();toast(`Welcome, ${first(n)}`,'tok');renderAll();}
 function updateYou(){const m=memOf(me),d=document.getElementById('youdot');document.getElementById('youname').textContent=me?first(me):'Pick name';if(m){d.style.background=m.bg;d.style.color=m.cl;d.textContent=m.init;}}
 const MQ=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):{matches:true};
@@ -1415,6 +1674,9 @@ function applyTheme(){const t=effTheme();document.documentElement.setAttribute('
 MQ.addEventListener&&MQ.addEventListener('change',()=>{if(!prefs.theme)applyTheme();});
 function toggleTheme(){prefs.theme=effTheme()==='dark'?'light':'dark';applyTheme();savePrefs();}
 function openSettings(){
+  if(!P){openGate();return;}
+  const opts=[['t5q4',QA.label],...Object.entries(QLIST).filter(([id])=>id!=='t5q4').map(([id,v])=>[id,v.label])];
+  document.getElementById('set-q').innerHTML=opts.map(([id,l])=>`<option value="${esc(id)}"${QCFG&&QCFG.id===id?' selected':''}>${esc(l)}</option>`).join('');
   const s=fb.settings;
   document.getElementById('set-tz').value=teamTz();
   document.getElementById('set-wed').value=s.wedTime||'17:30';document.getElementById('set-wed-d').value=String(s.wedDur||30);
@@ -1425,14 +1687,14 @@ function openSettings(){
   showModal('set-modal');
 }
 function saveSettings(){
-  if(!me)return needName();
+  if(!ready())return;
   let link=document.getElementById('set-link').value.trim();if(link&&!/^https?:\/\//i.test(link))link='https://'+link;
   db.ref(`${P}/settings`).update({tz:document.getElementById('set-tz').value,wedTime:document.getElementById('set-wed').value||'17:30',wedDur:+document.getElementById('set-wed-d').value,satTime:document.getElementById('set-sat').value||'10:00',satDur:+document.getElementById('set-sat-d').value,meetLink:link,leaderStart:+document.getElementById('set-lead').value});
   logAct('updated team settings','');closeModal('set-modal');toast('Saved for the team','tok');
 }
 function resetQuarter(){
-  if(prompt('This erases all Autumn 2026 tracker data for everyone. Type RESET to confirm.')!=='RESET'){toast('Nothing was reset','twarn');return;}
-  const keep=fb.settings;db.ref(P).set({settings:keep});closeModal('set-modal');toast('Autumn 2026 data reset','tok');
+  if(prompt(`This erases all ${QCFG.label} tracker data for everyone. A backup downloads first. Type RESET to confirm.`)!=='RESET'){toast('Nothing was reset','twarn');return;}
+  exportBackup(true).then(()=>{const keep=fb.settings;db.ref(P).set({settings:keep});closeModal('set-modal');toast(`${QCFG.label} data reset. Backup saved to your downloads.`,'tok');});
 }
 function showModal(id){document.getElementById(id).classList.add('show');}
 function closeModal(id){document.getElementById(id).classList.remove('show');}
@@ -1476,8 +1738,14 @@ async function loadFirebase(){
 async function start(){
   boot();
   if(!(await loadFirebase())){setDb('nosdk');return;}
-  try{firebase.initializeApp(FBCFG);db=firebase.database();setupListeners();heartbeat();}
-  catch(e){console.error(e);setDb('nosdk');}
+  try{firebase.initializeApp(FBCFG);db=firebase.database();watchConnection();}
+  catch(e){console.error(e);setDb('nosdk');return;}
+  const r=localStorage.getItem('t5_room');
+  if(!r){openGate();return;}
+  try{
+    if(!(await db.ref(`rooms/${r}/meta`).once('value')).val()){localStorage.removeItem('t5_room');openGate('The saved team code no longer works. Enter the current code.');return;}
+  }catch(e){dbFail(e,'meta');return;}
+  await enterRoom(r);
   setTimeout(()=>{if(dbStatus==='loading')setDb('offline');},12000);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
