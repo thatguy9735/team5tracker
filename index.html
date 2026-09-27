@@ -78,6 +78,9 @@ button.st-chip{cursor:pointer;}button.st-chip:hover{border-color:var(--b2);color
 .live-ic{background:color-mix(in srgb,var(--cc) 18%,transparent);}
 .chip.live{background:color-mix(in srgb,var(--cc) 15%,transparent);color:var(--cc);}
 .mrow.live-past{opacity:.72;}
+.mrow.ses-opt .mname{font-weight:400;}
+.pill-warn{background:var(--as2);color:var(--amber);}
+.sub-hd{padding:7px 14px 5px;font-size:11px;color:var(--t3);border-bottom:1px solid var(--b1);background:var(--sunken);}
 
 /* Banners */
 .banner{margin-top:10px;border-radius:var(--r);padding:10px 14px;display:flex;align-items:flex-start;gap:10px;}
@@ -484,6 +487,7 @@ textarea.inp{width:100%;min-height:60px;resize:vertical;}
     <div class="modal-s">Team 5 shares Strategy and Macro. Electives are individual, so you only see the ones you pick, and “done” counts only include classmates in the same elective.</div>
     <div class="sg" id="elec-list"></div>
     <div class="hint" id="elec-who"></div>
+
     <div class="macts">
       <button class="btn bacc" onclick="saveElectives()">Save my electives</button>
       <button class="btn bghost" onclick="closeModal('elec-modal')">Cancel</button>
@@ -584,11 +588,39 @@ const COURSES_A={
   'ECON 501':{s:'Macro',k:'macro',full:'Analysis of Global Economic Conditions',core:true},
   'FIN 558': {s:'M&A',k:'ma',full:'Mergers & Acquisitions'},
   'MGMT 560':{s:'Consulting',k:'cons',full:'Small Business Consulting'},
-  'MKTG':    {s:'Mktg Analytics',k:'mktg',full:'Marketing Analytics'},
+  'MKTG':    {s:'Mktg Analytics',k:'mktg',full:'Marketing Analytics (MKTG 579)'},
   'OTHER':   {s:'Other',k:'other',full:'Other',core:true},
 };
 let COURSES=COURSES_A,ELECTIVES=Object.keys(COURSES).filter(c=>!COURSES[c].core);
 const isCore=c=>!!(COURSES[c]||COURSES.OTHER).core;
+/* Source: C9 Fall 2026 Weekly Schedule (Foster). All times Pacific.
+   t: live = Foster Live, rev = review session, oh = office hours. ab = split into sections A and B. */
+const SES_A=[
+  {d:'2026-09-29',c:'MGMT 502',t:'live',ab:1},
+  {d:'2026-09-30',c:'MKTG',t:'live',s:'18:00',e:'20:00'},
+  {d:'2026-10-01',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},{d:'2026-10-01',c:'FIN 558',t:'oh',s:'19:00',e:'19:55'},
+  {d:'2026-10-06',c:'ECON 501',t:'live',ab:1},
+  {d:'2026-10-07',c:'MKTG',t:'rev',s:'19:00',e:'19:55'},
+  {d:'2026-10-08',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},{d:'2026-10-08',c:'FIN 558',t:'oh',s:'19:00',e:'19:55'},
+  {d:'2026-10-13',c:'FIN 558',t:'live',s:'18:00',e:'20:00'},{d:'2026-10-13',c:'MGMT 560',t:'live',s:'18:00',e:'20:00'},
+  {d:'2026-10-14',c:'MKTG',t:'rev',s:'19:00',e:'19:55'},
+  {d:'2026-10-15',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},{d:'2026-10-15',c:'FIN 558',t:'oh',s:'19:00',e:'19:55'},{d:'2026-10-15',c:'MGMT 502',t:'rev',s:'20:00',e:'20:55'},
+  {d:'2026-10-20',c:'MGMT 502',t:'live',ab:1},
+  {d:'2026-10-21',c:'MKTG',t:'live',s:'18:00',e:'20:00'},
+  {d:'2026-10-22',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},{d:'2026-10-22',c:'FIN 558',t:'oh',s:'19:00',e:'19:55'},{d:'2026-10-22',c:'MKTG',t:'rev',s:'19:00',e:'19:55'},
+  {d:'2026-10-27',c:'ECON 501',t:'live',ab:1},
+  {d:'2026-10-29',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},{d:'2026-10-29',c:'MGMT 502',t:'rev',s:'19:00',e:'19:55'},
+  {d:'2026-11-03',c:'MGMT 502',t:'live',ab:1},
+  {d:'2026-11-05',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},
+  {d:'2026-11-10',c:'ECON 501',t:'live',ab:1},
+  {d:'2026-11-12',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},{d:'2026-11-12',c:'MGMT 502',t:'rev',s:'19:00',e:'19:55'},
+  {d:'2026-11-19',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},
+  {d:'2026-11-25',c:'ECON 501',t:'rev',s:'18:00',e:'18:55'},{d:'2026-11-25',c:'MGMT 502',t:'rev',s:'19:00',e:'19:55'},
+];
+const CLOSED_A=[{d:'2026-11-11',n:'Veterans Day'},{d:'2026-11-26',n:'Thanksgiving'},{d:'2026-11-27',n:'Native American Heritage Day'}];
+const INST={'MGMT 502':'David Sirmon','ECON 501':'Vladimir Dashkeev','FIN 558':'Lance Young','MGMT 560':'Elizabeth Umphress','MKTG':'Russell Walker'};
+const SECTIONS={A:['17:00','18:30'],B:['19:00','20:30']};
+const TEAM_SEC='A';   // all of Team 5 is in Foster Live section A
 const WEEKS_A=[
   {n:1, s:'2026-09-21',e:'2026-09-27'},
   {n:2, s:'2026-09-28',e:'2026-10-04'},
@@ -604,7 +636,8 @@ const WEEKS_A=[
 /* Source: Foster HMBA Q4 Tracker.xlsx (Amadeusz), duplicates across week tabs removed */
 const ITEMS_A=[{"id":"str1_01","c":"MGMT 502","m":1,"n":"Bullseye Model Video","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_02","c":"MGMT 502","m":1,"n":"Read: How David Beats Goliath","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_03","c":"MGMT 502","m":1,"n":"Read: The Perils of Bad Strategy","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_04","c":"MGMT 502","m":1,"n":"Read: AI and Strategy","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_05","c":"MGMT 502","m":1,"n":"Read: 5Forces","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_06","c":"MGMT 502","m":1,"n":"Watch: 5Forces","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_07","c":"MGMT 502","m":1,"n":"Read: Cola Wars","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_08","c":"MGMT 502","m":1,"n":"Watch: VRIO","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_09","c":"MGMT 502","m":1,"n":"Watch VRIO and Sets of Resources","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_10","c":"MGMT 502","m":1,"n":"Read: Ex-Patriots Can't Live Up to Brady","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_11","c":"MGMT 502","m":1,"n":"Read: Trader Joe's","g":"N","t":null,"due":"2026-09-24"},{"id":"str1_12","c":"MGMT 502","m":1,"n":"Read: A 40 Year Debate…","g":"O","t":null,"due":"2026-09-24"},{"id":"eco1_01","c":"ECON 501","m":1,"n":"Read: Textbook Chapter 1, Sections 1.1 and 1.2 (Skim Only)","g":"N","t":null,"due":"2026-09-25"},{"id":"eco1_02","c":"ECON 501","m":1,"n":"Read: One economic sickness, five diagnoses","g":"N","t":null,"due":"2026-09-25"},{"id":"eco1_03","c":"ECON 501","m":1,"n":"Read: Textbook Chapter 2, Section 2.1 (Skim Only)","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_01","c":"FIN 558","m":1,"n":"Watch 7 Videos","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_02","c":"FIN 558","m":1,"n":"Read A note on valuation in private equity settings, 9-297-050, Harvard Business School.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_03","c":"FIN 558","m":1,"n":"Read A note on mergers and acquisitions and valuation, 95B023, Ivey School of Business.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_04","c":"FIN 558","m":1,"n":"Read Creating value through M&As, IMD651, IMD, Lausanne Switzerland.","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_05","c":"FIN 558","m":1,"n":"Read: Filmore Industries and Certified Aerospace","g":"N","t":null,"due":"2026-09-25"},{"id":"fin1_06","c":"FIN 558","m":1,"n":"Submit: Discussion 1.1: Filmore Industries and Certified Aerospace (Team)","g":"Y","t":"team","due":"2026-09-25"},{"id":"str2_01","c":"MGMT 502","m":2,"n":"Read: David B. Yoffie; Mary Kwak (2006). With Friends Like These: The Art of Managing Complementors","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_02","c":"MGMT 502","m":2,"n":"Watch: Video 2.1","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_03","c":"MGMT 502","m":2,"n":"Read: Network effects in gaming and AI","g":"N","t":null,"due":"2026-09-29"},{"id":"str2_04","c":"MGMT 502","m":2,"n":"FOSTER LIVE","g":"Y","t":null,"due":"2026-09-29"},{"id":"str2_05","c":"MGMT 502","m":2,"n":"Submit: Apply","g":"Y","t":null,"due":"2026-10-01"},{"id":"eco1_04","c":"ECON 501","m":1,"n":"Problem Set 1.1","g":"Y","t":null,"due":"2026-10-04"},{"id":"eco1_05","c":"ECON 501","m":1,"n":"Problem Set 1.2","g":"Y","t":"team","due":"2026-10-04"},{"id":"eco2_01","c":"ECON 501","m":2,"n":"Watch: Video","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_02","c":"ECON 501","m":2,"n":"Read: Section 2.1, Subsection \"Other Measures of Income\"","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_03","c":"ECON 501","m":2,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-10-04"},{"id":"eco2_04","c":"ECON 501","m":2,"n":"Submit: Problem Set 2.1","g":"Y","t":null,"due":"2026-10-04"},{"id":"fin2_01","c":"FIN 558","m":2,"n":"Submit: Assignment 2.1: Filmore Industries and Certified Aerospace, continued (Individual)","g":"Y","t":null,"due":"2026-10-04"},{"id":"str2_06","c":"MGMT 502","m":2,"n":"Submit: Peer Review","g":"Y","t":null,"due":"2026-10-04"},{"id":"eco3_01","c":"ECON 501","m":3,"n":"(Optional) Read: Avinash Dixit, Microeconomics: A Very Short Introduction, 2014.","g":"O","t":null,"due":"2026-10-06"},{"id":"eco3_02","c":"ECON 501","m":3,"n":"Watch: Microeconomics Refresher","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_03","c":"ECON 501","m":3,"n":"Read: Textbook Chapter 3, Section 3-1","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_04","c":"ECON 501","m":3,"n":"Read: Textbook Chapter 4, Sections 4-1 and 4-2","g":"N","t":null,"due":"2026-10-06"},{"id":"eco3_05","c":"ECON 501","m":3,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-06"},{"id":"eco3_06","c":"ECON 501","m":3,"n":"Submit: Group Problem Set 3.1","g":"Y","t":"team","due":"2026-10-11"},{"id":"eco3_07","c":"ECON 501","m":3,"n":"Submit: Discussion 3.1: Module 3 (Week 3)","g":"Y","t":null,"due":"2026-10-11"},{"id":"eco3_08","c":"ECON 501","m":3,"n":"Submit: Course Project: Country Choice","g":"Y","t":"team","due":"2026-10-11"},{"id":"fin3_01","c":"FIN 558","m":3,"n":"Watch: Video 3:1","g":"N","t":null,"due":"2026-10-11"},{"id":"fin3_02","c":"FIN 558","m":3,"n":"Read: HP and Compaq Case","g":"N","t":null,"due":"2026-10-11"},{"id":"fin3_03","c":"FIN 558","m":3,"n":"Submit: Discussion 3.1: HP and Compaq (Team)","g":"Y","t":"team","due":"2026-10-11"},{"id":"str3_01","c":"MGMT 502","m":3,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_02","c":"MGMT 502","m":3,"n":"Read: 2025: The art of optimal distinctiveness: Balancing novelty and familiarity","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_03","c":"MGMT 502","m":3,"n":"Read: Edward Jones: Implementing the Solutions Approach","g":"N","t":null,"due":"2026-10-11"},{"id":"str3_04","c":"MGMT 502","m":3,"n":"Engage: Survey","g":"Y","t":null,"due":"2026-10-11"},{"id":"str3_05","c":"MGMT 502","m":3,"n":"Submit: Strategic Issue 1","g":"Y","t":null,"due":"2026-10-11"},{"id":"fin4_01","c":"FIN 558","m":4,"n":"Submit: Discussion 4.1: HP & Compaq, Part 2 (Team)","g":"Y","t":"team","due":"2026-10-13"},{"id":"fin4_02","c":"FIN 558","m":4,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-13"},{"id":"str4_05","c":"MGMT 502","m":4,"n":"Submit: Apply 2","g":"Y","t":null,"due":"2026-10-15"},{"id":"eco4_01","c":"ECON 501","m":4,"n":"Read: Section 2.3, Subsection \"Measuring Joblessness\" (skip the Case Study)","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_02","c":"ECON 501","m":4,"n":"Watch: 2 Videos and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_03","c":"ECON 501","m":4,"n":"Read: Section 8.4, Subsection \"Transitions into and out of the Labor Force\"","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_04","c":"ECON 501","m":4,"n":"Watch: 2 YouTube videos","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_05","c":"ECON 501","m":4,"n":"Watch: Video and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_06","c":"ECON 501","m":4,"n":"Read: Textbook Chapter 8 (8.1, 8.2, intro)","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_07","c":"ECON 501","m":4,"n":"Watch: 3 Videos and Solve an Ungraded Problem","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_08","c":"ECON 501","m":4,"n":"Read: Section 8.5","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_09","c":"ECON 501","m":4,"n":"Read: Section 2.3, Subsection \"Case Study\"","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_10","c":"ECON 501","m":4,"n":"Watch: Video","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_11","c":"ECON 501","m":4,"n":"Watch: YouTube Video","g":"N","t":null,"due":"2026-10-18"},{"id":"eco4_12","c":"ECON 501","m":4,"n":"Submit: Problem Set 4.1","g":"Y","t":null,"due":"2026-10-18"},{"id":"eco4_13","c":"ECON 501","m":4,"n":"Submit: Discussion 4.1: Module 4 (Week 4)","g":"Y","t":null,"due":"2026-10-18"},{"id":"fin4_03","c":"FIN 558","m":4,"n":"Submit: Assignment 4.1: Individual Responses to HP/Compaq Case Questions (Individual)","g":"Y","t":null,"due":"2026-10-18"},{"id":"fin4_04","c":"FIN 558","m":4,"n":"Watch: Video 4.1","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_01","c":"MGMT 502","m":4,"n":"Re-Watch: 2 videos","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_02","c":"MGMT 502","m":4,"n":"Read: Michael E. Porter. What Is Strategy?","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_03","c":"MGMT 502","m":4,"n":"Read: JW Rivkin, ME Porter. Matching Dell","g":"N","t":null,"due":"2026-10-18"},{"id":"str4_04","c":"MGMT 502","m":4,"n":"Engage: Survey 4.1","g":"Y","t":null,"due":"2026-10-18"},{"id":"str4_06","c":"MGMT 502","m":4,"n":"Submit: Peer Review 2","g":"Y","t":null,"due":"2026-10-18"},{"id":"str5_01","c":"MGMT 502","m":5,"n":"Read: W. Chan Kim & Renee A. Mauborgne (2004). Blue Ocean Strategy","g":"N","t":null,"due":"2026-10-20"},{"id":"str5_02","c":"MGMT 502","m":5,"n":"Watch: 3 Videos","g":"N","t":null,"due":"2026-10-20"},{"id":"str5_03","c":"MGMT 502","m":5,"n":"Submit: Discussion 5.1 OR Discussion 5.2","g":"Y","t":"team","due":"2026-10-20"},{"id":"str5_04","c":"MGMT 502","m":5,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-20"},{"id":"fin5_01","c":"FIN 558","m":5,"n":"Submit: Discussion 5.1: AT&T and McCaw (Team)","g":"Y","t":"team","due":"2026-10-25"},{"id":"str5_05","c":"MGMT 502","m":5,"n":"Assignment 5.1: Value Curve and Utility Maps Final Submission (Team)","g":"Y","t":"team","due":"2026-10-25"},{"id":"eco6_01","c":"ECON 501","m":6,"n":"Read: Textbook Chapter 2, Sections 2-1 and 2-2","g":"N","t":null,"due":"2026-10-27"},{"id":"eco6_02","c":"ECON 501","m":6,"n":"Read: Textbook Chapter 6, Multiple Sections","g":"N","t":null,"due":"2026-10-27"},{"id":"eco6_03","c":"ECON 501","m":6,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-10-27"},{"id":"fin5_02","c":"FIN 558","m":5,"n":"Submit: Assignment 5.1: AT&T and McCaw (Individual)","g":"Y","t":null,"due":"2026-10-27"},{"id":"eco6_04","c":"ECON 501","m":6,"n":"Read: Article Is the U.S. in an Above-Target Inflation Regime?","g":"N","t":null,"due":"2026-11-01"},{"id":"eco6_05","c":"ECON 501","m":6,"n":"Submit: Individual Problem Set 6.1","g":"Y","t":null,"due":"2026-11-01"},{"id":"eco6_07","c":"ECON 501","m":6,"n":"Submit: Discussion 6.1: Module 3 (Week 6)","g":"Y","t":null,"due":"2026-11-01"},{"id":"fin5_03","c":"FIN 558","m":5,"n":"Watch: Video 5.1: AT&T & McCaw Epilogue","g":"N","t":null,"due":"2026-11-01"},{"id":"fin5_04","c":"FIN 558","m":5,"n":"Submit: Course Evaluations","g":"N","t":null,"due":"2026-11-01"},{"id":"str5_06","c":"MGMT 502","m":5,"n":"E-mail for Approval: Blue Ocean Strategy Project (Team)","g":"Y","t":"team","due":"2026-11-01"},{"id":"str6_01","c":"MGMT 502","m":6,"n":"Read: Giovanni Gavetti & Jan W. Rivkin (2005). How Strategists Really Think: Tapping the Power of Analogy","g":"N","t":null,"due":"2026-11-01"},{"id":"str6_02","c":"MGMT 502","m":6,"n":"Watch: 3 Videos","g":"N","t":null,"due":"2026-11-01"},{"id":"str6_03","c":"MGMT 502","m":6,"n":"Submit: Blue Ocean Project","g":"Y","t":"team","due":"2026-11-01"},{"id":"str7_01","c":"MGMT 502","m":7,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-03"},{"id":"str7_02","c":"MGMT 502","m":7,"n":"Read: Coyne & Horn (2009). Predicting Your Competitor's Reaction","g":"N","t":null,"due":"2026-11-03"},{"id":"str7_03","c":"MGMT 502","m":7,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-11-03"},{"id":"str7_04","c":"MGMT 502","m":7,"n":"Submit: Apply 3","g":"Y","t":null,"due":"2026-11-05"},{"id":"eco6_06","c":"ECON 501","m":6,"n":"Start: Group Assignment 6.2 -- Part 1 of Course Project","g":"Y","t":"team","due":"2026-11-08"},{"id":"eco7_01","c":"ECON 501","m":7,"n":"Read: Textbook Chapter 12 (Introduction to Economic Fluctuations)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_02","c":"ECON 501","m":7,"n":"Watch: 1 Video (Business cycles, Economy in the short run vs. long run)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_03","c":"ECON 501","m":7,"n":"Read: Sections 12-3, 12-4","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_04","c":"ECON 501","m":7,"n":"Watch: 3 Videos (The Model of Aggregate Supply and Aggregate Demand) & solve ungraded practice problems","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_05","c":"ECON 501","m":7,"n":"Read: Section 12-5 Stabilization Policy","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_06","c":"ECON 501","m":7,"n":"Watch: Video (Stabilization policies & AD-AS model) & solve an ungraded practice problem","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_07","c":"ECON 501","m":7,"n":"Read: Textbook Chapter 18 (Alternative Perspectives on Stabilization Policy)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_08","c":"ECON 501","m":7,"n":"Watch: Video (Policy lags, Autostabilizers, Supply-Side Effects)","g":"N","t":null,"due":"2026-11-08"},{"id":"eco7_09","c":"ECON 501","m":7,"n":"Submit: Individual Problem Set 7.1","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco7_10","c":"ECON 501","m":7,"n":"Submit: Discussion 7.1: Module 7 (Week 7)","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco7_11","c":"ECON 501","m":7,"n":"Submit: Group Assignment 6.2 -- Part 1 of Course Project","g":"Y","t":"team","due":"2026-11-08"},{"id":"str7_05","c":"MGMT 502","m":7,"n":"Submit: Review 3","g":"Y","t":null,"due":"2026-11-08"},{"id":"eco8_01","c":"ECON 501","m":8,"n":"Read: Textbook Chapter 13: Aggregate Demand I: Building the IS–LM Model","g":"N","t":null,"due":"2026-11-10"},{"id":"eco8_02","c":"ECON 501","m":8,"n":"Read: Textbook Chapter 14: Aggregate Demand II: Applying the IS–LM Model","g":"N","t":null,"due":"2026-11-10"},{"id":"eco8_03","c":"ECON 501","m":8,"n":"Attend: Foster Live","g":"Y","t":null,"due":"2026-11-10"},{"id":"eco8_04","c":"ECON 501","m":8,"n":"Submit: Individual Problem Set 8.1","g":"Y","t":null,"due":"2026-11-15"},{"id":"eco8_05","c":"ECON 501","m":8,"n":"Start: Group Problem Set 8.2","g":"Y","t":"team","due":"2026-11-15"},{"id":"eco8_06","c":"ECON 501","m":8,"n":"Start: Group Assignment 8.3 -- Part 2 of Course Project","g":"Y","t":"team","due":"2026-11-15"},{"id":"eco8_07","c":"ECON 501","m":8,"n":"Submit: Discussion 8.1: Module 3 (Week 8)","g":"Y","t":null,"due":"2026-11-15"},{"id":"str8_01","c":"MGMT 502","m":8,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-15"},{"id":"str8_02","c":"MGMT 502","m":8,"n":"Read: The Walt Disney Company - 2017","g":"N","t":null,"due":"2026-11-15"},{"id":"str8_03","c":"MGMT 502","m":8,"n":"Engage: Please submit this very short survey about Disney.","g":"Y","t":null,"due":"2026-11-15"},{"id":"str8_04","c":"MGMT 502","m":8,"n":"Submit: Strategic Issue 2: Disney","g":"Y","t":"pair","due":"2026-11-15"},{"id":"eco9_01","c":"ECON 501","m":9,"n":"Watch Video: Motivation","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_02","c":"ECON 501","m":9,"n":"Watch: 1 Video (Introduction and Misery Index)","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_03","c":"ECON 501","m":9,"n":"Read: Textbook Chapter 16: Aggregate Supply and the Short-Run Tradeoff Between Inflation and Unemployment, Section 16-2 \"Inflation, Unemployment, and the Phillips Curve\"","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_04","c":"ECON 501","m":9,"n":"Watch Video: Original Phillips curve & solve ungraded practice problem","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_05","c":"ECON 501","m":9,"n":"Read: Textbook Subsections \"Adaptive Expectations and Inflation Inertia,\" \"The Short-Run Tradeoff Between Inflation and Unemployment\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_06","c":"ECON 501","m":9,"n":"Watch Video: Rational-Expectations Phillips Curve: the short-run and long-run","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_07","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Two Causes of Rising and Falling Inflation\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_08","c":"ECON 501","m":9,"n":"Watch Video: Demand-pull and Cost-push Inflation & solve ungraded practice problem","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_09","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Disinflation and the Sacrifice Ratio\", Section 16-2 / Subsection \"Unemployment and Okun’s Law\", Section 12-1 \"The Facts About the Business Cycle\" / Subsections \"Rational Expectations and the Possibility of Painless Disinflation\" and \"Anchored Expectations\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_10","c":"ECON 501","m":9,"n":"Watch Video: Cost of Disinflation","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_11","c":"ECON 501","m":9,"n":"Read: Textbook Subsection \"Hysteresis and the Challenge to the Natural-Rate Hypothesis\", Section 16-2","g":"N","t":null,"due":"2026-11-22"},{"id":"eco9_12","c":"ECON 501","m":9,"n":"Submit: Individual Problem Set 9.1","g":"Y","t":null,"due":"2026-11-22"},{"id":"eco9_13","c":"ECON 501","m":9,"n":"Submit: Group Assignment 8.3 -- Part 2 of Course Project","g":"Y","t":"team","due":"2026-11-22"},{"id":"eco9_14","c":"ECON 501","m":9,"n":"Submit: Discussion 9.1: Module 9","g":"Y","t":null,"due":"2026-11-22"},{"id":"str9_01","c":"MGMT 502","m":9,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_02","c":"MGMT 502","m":9,"n":"Read: Note on Organizational Culture","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_03","c":"MGMT 502","m":9,"n":"Read: The New Analytics of Culture","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_04","c":"MGMT 502","m":9,"n":"Review: Netflix Culture Slide Deck Optional","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_05","c":"MGMT 502","m":9,"n":"Read: Netflix's Culture: Binge or Cringe?","g":"N","t":null,"due":"2026-11-22"},{"id":"str9_06","c":"MGMT 502","m":9,"n":"Submit: Discussion 9.1: Organizational Design Horror Stories","g":"Y","t":null,"due":"2026-11-22"},{"id":"eco10_01","c":"ECON 501","m":10,"n":"Watch: Introductory Video","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_02","c":"ECON 501","m":10,"n":"Read: Textbook Review Section 3-1 What Determines the Total Production of Goods and Services? / Read Subsection \"The Firm’s Demand for Factors\", Section 3-2 How Is National Income Distributed to the Factors of Production?","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_03","c":"ECON 501","m":10,"n":"Watch: Video","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_04","c":"ECON 501","m":10,"n":"Read: Textbook Section 9-1 The Basic Solow Model / Section 9-2 The Golden Rule Level of Capital / Subsections \"Evaluating the Rate of Saving\" and \"Changing the Rate of Saving\", Section 11-3 Policies to Promote Growth","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_05","c":"ECON 501","m":10,"n":"Read: Textbook Subsections \"Adaptive Expectations and Inflation Inertia,\" \"The Short-Run Tradeoff Between Inflation and Unemployment\", Section 16-2","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_06","c":"ECON 501","m":10,"n":"Watch: 4 Videos","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_07","c":"ECON 501","m":10,"n":"Read: Textbook / 10-1 Population Growth in the Solow Model, skim: Subsection \"Alternative Perspectives on Population Growth\" / skim: Section 10-3 Beyond the Solow Model: Endogenous Growth Theory / 11-1 From Growth Theory to Growth Empirics / skim: Section 11-2 Accounting for the Sources of Economic Growth / Subsections \"Establishing the Right Institutions\", \"\"Establishing the Right Institutions\", \"Establishing the Right Institutions\", \"Permitting Free Trade\", Section 11-3 Policies to Promote Growth","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_08","c":"ECON 501","m":10,"n":"Watch: 2 Videos","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_09","c":"ECON 501","m":10,"n":"Read: Textbook Subsection \"Convergence\" , Section 11-1 From Growth Theory to Growth Empirics","g":"N","t":null,"due":"2026-11-29"},{"id":"eco10_10","c":"ECON 501","m":10,"n":"Submit: Individual Problem Set 10.1","g":"Y","t":null,"due":"2026-11-29"},{"id":"eco10_12","c":"ECON 501","m":10,"n":"Submit: Discussion 10.1: Module 10","g":"Y","t":null,"due":"2026-11-29"},{"id":"eco10_13","c":"ECON 501","m":10,"n":"Submit: Course Evaluations","g":"N","t":null,"due":"2026-11-29"},{"id":"str10_01","c":"MGMT 502","m":10,"n":"Submit: Strategic Issue 3","g":"Y","t":"pair","due":"2026-11-29"},{"id":"str10_02","c":"MGMT 502","m":10,"n":"Watch: Final Thoughts","g":"N","t":null,"due":"2026-11-29"},{"id":"str10_05","c":"MGMT 502","m":10,"n":"Submit: UW Issued Course Evaluation","g":"N","t":null,"due":"2026-12-04"},{"id":"eco10_11","c":"ECON 501","m":10,"n":"Submit: Group Assignment 10.3 -- Part 3 of Course Project","g":"Y","t":"team","due":"2026-12-06"},{"id":"str10_03","c":"MGMT 502","m":10,"n":"Submit: Lessons Learned","g":"Y","t":"team","due":"2026-12-07"},{"id":"str10_04","c":"MGMT 502","m":10,"n":"Submit: Big Group Evaluation","g":"Y","t":null,"due":"2026-12-07"}];
 let WEEKS=WEEKS_A,ITEMS=ITEMS_A;
-const QA={id:'t5q4',label:'Autumn 2026',weeks:WEEKS_A,courses:COURSES_A,items:ITEMS_A,builtin:true};
+let SESSIONS=SES_A,CLOSURES=CLOSED_A;
+const QA={id:'t5q4',label:'Autumn 2026',weeks:WEEKS_A,courses:COURSES_A,items:ITEMS_A,sessions:SES_A,closures:CLOSED_A,builtin:true};
 const NW=()=>WEEKS.length;
 const RP=()=>`rooms/${ROOM}`;
 
@@ -672,7 +705,38 @@ function doneBy(x,name){if(!name)return false;return isTeam(x)?!!fb.state[x.id]?
 function myDone(x){return doneBy(x,me);}
 function mine(x){return iTake(x.c);}
 function courseOk(x){return mine(x)&&(prefs.course==='all'||x.c===prefs.course);}
-function liveFor(w){return ALL.filter(x=>isLive(x)&&x.w===w&&courseOk(x));}
+function mySec(){return TEAM_SEC;}
+const SES_LBL={live:'Foster Live',rev:'Review session',oh:'Office hours'};
+/* Expand the schedule into concrete sessions. A split Foster Live becomes one session for your section,
+   or both sections if you haven't picked one. Attendance reuses the Foster Live item's id when one exists. */
+function sessionsAll(forName){
+  const sec=TEAM_SEC;
+  const out=[];
+  SESSIONS.forEach(x=>{
+    const item=x.t==='live'?ITEMS.find(i=>i.c===x.c&&i.due===x.d&&/foster live/i.test(i.n)):null;
+    const id=item?item.id:`ses_${uk(x.c)}_${x.d.replace(/-/g,'')}_${x.t}`;
+    const slots=x.ab?(sec&&SECTIONS[sec]?[[...SECTIONS[sec],sec]]:[[...SECTIONS.A,'A'],[...SECTIONS.B,'B']]):[[x.s,x.e,'']];
+    slots.forEach(([a,b,sc])=>{const start=zoned(x.d,a,DUE_TZ),end=zoned(x.d,b,DUE_TZ);out.push({...x,id,sec:sc,a,b,start,end,w:weekOf(x.d)});});
+  });
+  return out.sort((p,q)=>p.start-q.start);
+}
+function sessionsFor(w){return sessionsAll().filter(x=>x.w===w&&iTake(x.c)&&(prefs.course==='all'||x.c===prefs.course));}
+function closuresFor(w){return CLOSURES.filter(c=>weekOf(c.d)===w);}
+function timeRange(x){
+  const pt=`${fmt12(x.a).replace(' ',' ')} to ${fmt12(x.b)} PT`;
+  if(VIEWER_TZ===DUE_TZ||!TZL[VIEWER_TZ])return pt;
+  return `${pt} (${fmtIn(x.start,VIEWER_TZ)} to ${fmtIn(x.end,VIEWER_TZ)} ${TZL[VIEWER_TZ]})`;
+}
+/* A team meeting that overlaps any Foster Live someone on the team has to attend */
+function meetConflicts(m){
+  if(m.cancelled)return [];
+  const hits=[];
+  MEM.forEach(p=>sessionsAll(p.name).forEach(x=>{
+    if(x.t!=='live'||takes(p.name,x.c)===false)return;
+    if(x.start<m.end&&m.start<x.end){const lbl=`${crs(x.c).s} Foster Live`;if(!hits.includes(lbl))hits.push(lbl);}
+  }));
+  return hits;
+}
 function vis(x){return courseOk(x)&&!isLive(x)&&(prefs.readings||isKey(x));}
 function needName(){toast('Pick your name first','terr');openPicker();return false;}
 function ready(){if(!P){openGate();return false;}if(!me)return needName();return true;}
@@ -845,8 +909,8 @@ function renderStrip(){
   if(me&&dbStatus==='live'&&!enrollOf(me))c.push(`<button class="st-chip" onclick="openElectives()"><span class="dot warn"></span>Choose your electives</button>`);
   if(teamOpen)c.push(`<button class="st-chip" onclick="sw('week')"><span class="dot warn"></span><b>${teamOpen}</b> team item${teamOpen>1?'s':''} open</button>`);
   if(nx){const w=meetWhen(nx);c.push(`<button class="st-chip" onclick="goWk(${nx.w})">📅 ${esc(nx.label)} <b>${w==='now'?'now':w}</b></button>`);}
-  const nl=ALL.filter(x=>isLive(x)&&mine(x)&&dayDiff(x.due)>=0&&dayDiff(x.due)<=7)[0];
-  if(nl){const d=dayDiff(nl.due);c.push(`<button class="st-chip k-${crs(nl.c).k}" onclick="goWk(${nl.w})"><span class="dot" style="background:var(--cc)"></span>🎓 ${esc(crs(nl.c).s)} Foster Live <b>${d===0?'today':d===1?'tomorrow':fmtDay(nl.due,{weekday:'short'})}</b></button>`);}
+  const nl=sessionsAll().filter(x=>x.t==='live'&&iTake(x.c)&&x.end>Date.now()&&dayDiff(x.d)<=7)[0];
+  if(nl){const d=dayDiff(nl.d);c.push(`<button class="st-chip k-${crs(nl.c).k}" onclick="goWk(${nl.w})"><span class="dot" style="background:var(--cc)"></span>🎓 ${esc(crs(nl.c).s)} Foster Live <b>${d===0?'today':d===1?'tomorrow':fmtDay(nl.d,{weekday:'short'})} ${fmtIn(nl.start,VIEWER_TZ)}</b></button>`);}
   c.push('<span class="st-spacer"></span>');
   c.push(`<span class="st-chip" title="Online now">${on.length?on.map(n=>mAv(n)).join(''):''}${on.length?`${on.length} online`:'Nobody else online'}</span>`);
   document.getElementById('strip').innerHTML=c.join('');
@@ -858,23 +922,31 @@ function meetRow(m){
   return `<div class="mrow${m.cancelled?' cancelled':''}">
     <div class="micon">${m.icon||'⭐'}</div>
     <div class="minfo">
-      <div class="mname">${esc(m.label)}${live?'<span class="pill pill-now">Now</span>':soon?'<span class="pill pill-soon">Soon</span>':''}</div>
+      <div class="mname">${esc(m.label)}${live?'<span class="pill pill-now">Now</span>':soon?'<span class="pill pill-soon">Soon</span>':''}${(()=>{const c=meetConflicts(m);return c.length?`<span class="pill pill-warn" title="Someone on the team has class then">Overlaps ${esc(c.join(', '))}</span>`:'';})()}</div>
       <div class="mtime">${m.cancelled?'Cancelled this week':`${fmtDay(m.date)}, ${fmtDur(m.dur)}<br>${allZones(m.start)}${esc(localNote(m))}`}</div>
     </div>
     ${link&&!m.cancelled?`<a class="join" href="${esc(link)}" target="_blank" rel="noopener">Join</a>`:''}
     <button class="nbtn" onclick="openMeet(${m.w},'${m.key}')">Edit</button>
   </div>`;
 }
-function liveRow(x){
-  const d=dayDiff(x.due),att=myDone(x),k=crs(x.c);
-  return `<div class="mrow${d<0?' live-past':''}">
-    <div class="micon live-ic k-${k.k}">🎓</div>
+function sesRow(x){
+  const now=Date.now(),k=crs(x.c),d=dayDiff(x.d),past=x.end<now,live=x.start<=now&&x.end>now;
+  const att=!!fb.personal[x.id]?.[uk(me)],opt=x.t!=='live';
+  const pill=live?'<span class="pill pill-now">Now</span>':d===0&&!past?'<span class="pill pill-soon">Today</span>':d===1?'<span class="pill pill-soon">Tomorrow</span>':'';
+  return `<div class="mrow${past?' live-past':''}${opt?' ses-opt':''}">
+    <div class="micon live-ic k-${k.k}">${x.t==='live'?'🎓':x.t==='oh'?'🙋':'📖'}</div>
     <div class="minfo">
-      <div class="mname">${esc(k.s)} Foster Live${d===0?'<span class="pill pill-now">Today</span>':d===1?'<span class="pill pill-soon">Tomorrow</span>':''}${x.edited?'<span class="tag edited" style="margin-left:6px;">Edited</span>':''}</div>
-      <div class="mtime">${fmtDay(x.due)}. Session time is on Canvas.</div>
+      <div class="mname">${esc(k.s)} ${SES_LBL[x.t]}${opt?' <span class="meta-mini">optional</span>':''}${pill}</div>
+      <div class="mtime">${fmtDay(x.d)}, ${timeRange(x)}${INST[x.c]?`. ${esc(INST[x.c])}`:''}</div>
     </div>
-    ${d<=0?`<button class="nbtn${att?' good':''}" onclick="tog('${x.id}')" title="Only for your own record. Not counted in progress.">${att?'✓ Attended':'Attended?'}</button>`:''}
+    ${x.t==='live'&&(past||live)?`<button class="nbtn${att?' good':''}" onclick="togAttend('${x.id}')" title="Only for your own record. Not counted in progress.">${att?'✓ Attended':'Attended?'}</button>`:''}
   </div>`;
+}
+function closureRow(c){return `<div class="mrow live-past"><div class="micon">🏛️</div><div class="minfo"><div class="mname">Campus closed</div><div class="mtime">${fmtDay(c.d)}, ${esc(c.n)}</div></div></div>`;}
+function togAttend(id){
+  if(!ready())return;
+  const r=db.ref(`${P}/personal/${id}/${uk(me)}`);
+  if(fb.personal[id]?.[uk(me)])r.remove();else r.set(Date.now());
 }
 function openMeet(w,key){
   const isNew=!key;
@@ -989,6 +1061,7 @@ function applyQuarter(cfg){
   WEEKS=Object.values(cfg.weeks);
   COURSES={...cfg.courses};if(!COURSES.OTHER)COURSES.OTHER={s:'Other',k:'other',full:'Other',core:true};
   ITEMS=Object.values(cfg.items||{});
+  SESSIONS=Object.values(cfg.sessions||{});CLOSURES=Object.values(cfg.closures||{});
   ELECTIVES=Object.keys(COURSES).filter(c=>!COURSES[c].core);
   P=`${RP()}/${cfg.id}`;
   Object.assign(fb,{state:{},personal:{},comments:{},links:{},blocked:{},grades:{},ratings:{},polls:{},settings:{},announce:{},leadernotes:{},meetings:{},custom:{},overrides:{},enroll:{},log:[]});
@@ -1326,7 +1399,10 @@ function rWeek(){
         </div>
       </div></div>
       <div class="sec"><div class="sechd"><span>Meetings</span><div class="acts"><button class="nbtn" onclick="openMeet(${w})">+ Add</button></div></div>
-        <div class="card">${meets.map(meetRow).join('')}${liveFor(w).map(liveRow).join('')}</div>
+        <div class="card">${meets.map(meetRow).join('')}${(()=>{const ss=sessionsFor(w),req=ss.filter(x=>x.t==='live'),opt=ss.filter(x=>x.t!=='live'),cl=closuresFor(w);
+          return (req.length?`<div class="sub-hd">Foster Live (Team 5 is in section A)</div>`+req.map(sesRow).join(''):'')
+            +(opt.length?`<div class="sub-hd">Review sessions and office hours</div>`+opt.map(sesRow).join(''):'')
+            +(cl.length?cl.map(closureRow).join(''):'');})()}</div>
         ${fb.settings.meetLink?'':`<div class="hint">Add the Teams link in Settings to get Join buttons.</div>`}
       </div>
       <div class="sec"><div class="sechd"><span>Team this week <span class="note">core courses</span></span></div><div class="team-grid">${grid}</div></div>
@@ -1375,7 +1451,7 @@ function rSched(){
       <div class="wn">W${pad(w)}</div>${av(m,30)}
       <div class="sbody"><div class="sldr">${esc(m.name)}${w===detectWeek()?' <span class="badge">This week</span>':''}</div>
         <div class="srng">${rangeLbl(w)}. ${key.length} graded items${team?`, ${team} team`:''}.</div>
-        <div class="schips">${meetingsFor(w).map(mt=>`<span class="chip${mt.cancelled?' x':''}">${esc(mt.label.split(' ')[0])} ${fmtDay(mt.date,{weekday:'short',month:'short',day:'numeric'})}, ${fmt12(mt.time)}</span>`).join('')}${liveFor(w).map(x=>`<span class="chip live k-${crs(x.c).k}">🎓 ${esc(crs(x.c).s)} Live ${fmtDay(x.due,{weekday:'short',month:'short',day:'numeric'})}</span>`).join('')}</div>
+        <div class="schips">${meetingsFor(w).map(mt=>`<span class="chip${mt.cancelled?' x':''}">${esc(mt.label.split(' ')[0])} ${fmtDay(mt.date,{weekday:'short',month:'short',day:'numeric'})}, ${fmt12(mt.time)}</span>`).join('')}${sessionsAll().filter(x=>x.w===w&&x.t==='live'&&courseOk({c:x.c})).map(x=>`<span class="chip live k-${crs(x.c).k}">🎓 ${esc(crs(x.c).s)} Live ${fmtDay(x.d,{weekday:'short',month:'short',day:'numeric'})}, ${fmt12(x.a)}</span>`).join('')}${closuresFor(w).map(c=>`<span class="chip x" title="${esc(c.n)}">🏛️ Closed ${fmtDay(c.d,{weekday:'short',month:'short',day:'numeric'})}</span>`).join('')}</div>
         <div class="prog-sm"><div class="pf${p===100?' full':''}" style="width:${p}%;height:100%;"></div></div>
       </div></div>`;
   }).join('');
@@ -1437,7 +1513,7 @@ function rGuide(){
     ${R('🎨','Color by course','Each course has a color. Use the chips above the tabs to show one course at a time.')}
     ${R('☑️','Your own checkboxes','Individual work (problem sets, discussions, readings) now has a checkbox per person, so checking off your problem set no longer checks it for everyone. Only Team 5 deliverables in Strategy and Macro share one checkbox. Group work in an elective is with a different team, so everyone checks their own. The avatars on each row show who has finished.')}
     ${R('📚','Readings are hidden by default','There are about 100 readings and videos. Turn on “Show readings and videos” to see them.')}
-    ${R('🎓','Foster Live is a session, not homework','Live sessions are listed with meetings on This Week and in Schedule, not as overdue work. After a session you can mark it attended for your own record.')}
+    ${R('🎓','Class sessions with real times','Foster Live, review sessions, and office hours come from Foster’s official Fall schedule and show on This Week for the courses you take. Team 5 is in section A, so Strategy and Macro Foster Lives show 5:00 to 6:30 PM PT. Team meetings get an “Overlaps” warning if they are ever moved on top of a Foster Live.')}
     ${R('📅','Meetings you can move','Edit any single meeting to change its date or time, cancel it for one week, or add an extra session.')}
     ${R('🌎','Three time zones','Team 5 spans Pacific (Tyler, Amadeusz, Samantha, Audrey), Central (Andrew), and Eastern (Taiwo). Every meeting shows all three, the Teams update does too, and “Team this week” shows each person’s local time.')}
     ${R('➕','Add assignments','Anything missing, like MGMT 560 or Marketing Analytics work, can be added with “+ Add assignment”.')}
@@ -1585,7 +1661,7 @@ function openElectives(){
 function saveElectives(){
   const e={_set:true};document.querySelectorAll('#elec-list input:checked').forEach(i=>e[i.value]=true);
   db.ref(`${P}/enroll/${uk(me)}`).set(e);
-  const n=Object.keys(e).length-1;logAct(n?`is taking ${ELECTIVES.filter(c=>e[c]).map(c=>crs(c).s).join(', ')}`:'is not taking electives this quarter','');
+  const n=ELECTIVES.filter(c=>e[c]).length;logAct(n?`is taking ${ELECTIVES.filter(c=>e[c]).map(c=>crs(c).s).join(', ')}`:'is not taking electives this quarter','');
   closeModal('elec-modal');toast('Electives saved','tok');
 }
 
@@ -1622,7 +1698,8 @@ function copyDigest(w){
   if(st.length){L.push('','Stuck:');st.forEach(x=>L.push(`  🚨 ${x.n}: ${fb.blocked[x.id].by}`));}
   L.push('','Meetings:');
   meetingsFor(w).forEach(mt=>L.push(`  ${mt.cancelled?'(cancelled) ':''}${mt.label}: ${fmtDay(mt.date)}, ${allZones(mt.start)}`));
-  ALL.filter(x=>isLive(x)&&x.w===w&&isCore(x.c)).forEach(x=>L.push(`  Foster Live (${crs(x.c).s}): ${fmtDay(x.due)}, time on Canvas`));
+  SESSIONS.filter(x=>x.t==='live'&&weekOf(x.d)===w&&isCore(x.c)).forEach(x=>L.push(`  Foster Live (${crs(x.c).s}): ${fmtDay(x.d)}, ${x.ab?`${fmt12(SECTIONS[TEAM_SEC][0])} PT (section ${TEAM_SEC})`:`${fmt12(x.s)} PT`}`));
+  closuresFor(w).forEach(c=>L.push(`  Campus closed ${fmtDay(c.d)} (${c.n})`));
   if(fb.settings.meetLink)L.push(`  Join: ${fb.settings.meetLink}`);
   L.push('',`Tracker: ${SITE}`);
   navigator.clipboard.writeText(L.join('\n')).then(()=>toast('Copied. Paste it into the Teams chat.','tok')).catch(()=>toast('Copy was blocked by the browser','terr'));
@@ -1635,7 +1712,8 @@ function fold(l){const o=[];while(l.length>74){o.push(l.slice(0,74));l=' '+l.sli
 function exportICS(){
   const stamp=icsUtc(new Date()),L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Team5//Tracker//EN','CALSCALE:GREGORIAN',`X-WR-CALNAME:Team 5 ${(QCFG||QA).label}`];
   ALL.filter(x=>isKey(x)&&mine(x)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`${crs(x.c).s}: ${x.n}${isTeam(x)?' (Team)':''}`)}`,`DESCRIPTION:${icsEsc(`${x.c}. Due 11:59 PM PT. ${SITE}`)}`,'TRANSP:TRANSPARENT','END:VEVENT'));
-  ALL.filter(x=>isLive(x)&&mine(x)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${x.due.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(x.due,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc(`Foster Live: ${crs(x.c).s}`)}`,`DESCRIPTION:${icsEsc('Session time is on Canvas.')}`,'END:VEVENT'));
+  sessionsAll().filter(x=>iTake(x.c)).forEach(x=>L.push('BEGIN:VEVENT',`UID:${x.id}${x.sec}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART:${icsUtc(x.start)}`,`DTEND:${icsUtc(x.end)}`,`SUMMARY:${icsEsc(`${x.t==='live'?'':'Optional: '}${crs(x.c).s} ${SES_LBL[x.t]}`)}`,`DESCRIPTION:${icsEsc(`${x.c}${INST[x.c]?', '+INST[x.c]:''}`)}`,...(x.t==='live'?[]:['TRANSP:TRANSPARENT']),'END:VEVENT'));
+  CLOSURES.forEach(c=>L.push('BEGIN:VEVENT',`UID:closed-${c.d}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART;VALUE=DATE:${c.d.replace(/-/g,'')}`,`DTEND;VALUE=DATE:${addDays(c.d,1).replace(/-/g,'')}`,`SUMMARY:${icsEsc('Campus closed: '+c.n)}`,'TRANSP:TRANSPARENT','END:VEVENT'));
   allMeetings().filter(m=>!m.cancelled).forEach(m=>L.push('BEGIN:VEVENT',`UID:w${m.w}-${m.key}@team5tracker`,`DTSTAMP:${stamp}`,`DTSTART:${icsUtc(m.start)}`,`DTEND:${icsUtc(m.end)}`,`SUMMARY:${icsEsc('Team 5: '+m.label)}`,...(fb.settings.meetLink?[`LOCATION:${icsEsc('Microsoft Teams')}`,`DESCRIPTION:${icsEsc('Join: '+fb.settings.meetLink)}`]:[]),'END:VEVENT'));
   L.push('END:VCALENDAR');
   const blob=new Blob([L.map(fold).join('\r\n')],{type:'text/calendar'});
